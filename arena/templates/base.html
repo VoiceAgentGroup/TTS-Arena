@@ -564,6 +564,7 @@
             from {
                 transform: scaleX(1);
             }
+
             to {
                 transform: scaleX(0);
             }
@@ -618,25 +619,25 @@
                 left: 16px;
                 max-width: none;
             }
-            
+
             @keyframes slideIn {
                 from {
                     transform: translateY(-100%);
                     opacity: 0;
                 }
-            
+
                 to {
                     transform: translateY(0);
                     opacity: 1;
                 }
             }
-            
+
             @keyframes slideOut {
                 from {
                     transform: translateY(0);
                     opacity: 1;
                 }
-            
+
                 to {
                     transform: translateY(-100%);
                     opacity: 0;
@@ -954,12 +955,12 @@
                 background-color: var(--light-gray);
                 border-color: var(--border-color);
             }
-            
+
             .login-tip-overlay[data-popper-placement^='top'] .login-tip-caret:after {
                 background: var(--light-gray);
                 border-color: var(--border-color);
             }
-            
+
             .login-tip-close {
                 color: var(--text-color);
             }
@@ -1023,13 +1024,13 @@
             flex: 1;
             text-align: center;
         }
-        
+
         @media (prefers-color-scheme: dark) {
             .login-banner {
                 background-color: var(--light-gray);
                 border-color: var(--border-color);
             }
-            
+
             .login-banner-close {
                 border-color: var(--border-color);
                 background-color: rgba(255, 255, 255, 0.05);
@@ -1047,7 +1048,8 @@
     <div class="mobile-header">
         <div class="hamburger-menu" onclick="toggleSidebar()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
             </svg>
         </div>
         <div class="current-page">{% block current_page %}Arena{% endblock %}</div>
@@ -1058,28 +1060,58 @@
     <div class="sidebar">
         <div class="close-sidebar" onclick="toggleSidebar()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
             </svg>
         </div>
         <div class="logo">TTS Arena</div>
         <nav>
             <a href="{{ url_for('arena') }}" class="nav-item {% if request.path == '/' %}active{% endif %}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dices"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-dices">
+                    <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+                    <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" />
+                    <path d="M6 18h.01" />
+                    <path d="M10 14h.01" />
+                    <path d="M15 6h.01" />
+                    <path d="M18 9h.01" />
+                </svg>
                 Arena
             </a>
-            <a href="{{ url_for('leaderboard') }}" class="nav-item {% if request.path == '/leaderboard' %}active{% endif %}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            <a href="{{ url_for('leaderboard') }}"
+                class="nav-item {% if request.path == '/leaderboard' %}active{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-trophy">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                    <path d="M4 22h16" />
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                </svg>
                 Leaderboard
             </a>
             <a href="{{ url_for('about') }}" class="nav-item {% if request.path == '/about' %}active{% endif %}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-info">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                </svg>
                 About
             </a>
-            
+
             <!-- Admin Panel Link - Only visible to admin users -->
             {% if g.is_admin %}
             <a href="{{ url_for('admin.index') }}" class="nav-item {% if '/admin' in request.path %}active{% endif %}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-shield">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                </svg>
                 Admin Panel
             </a>
             {% endif %}
@@ -1087,47 +1119,13 @@
 
         <div class="sidebar-footer">
             <a href="https://discord.gg/HB8fMR6GTr" target="_blank" rel="noopener noreferrer" class="discord-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 127.14 96.36" fill="currentColor">
-                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 127.14 96.36"
+                    fill="currentColor">
+                    <path
+                        d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
                 </svg>
                 Join our Discord
             </a>
-
-            {% if current_user.is_authenticated %}
-            <div class="user-auth" onclick="toggleUserDropdown(event)">
-                <div class="user-name">{{ current_user.username }}</div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="user-auth-arrow">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-
-                <div class="user-dropdown">
-                    <a href="{{ url_for('auth.logout') }}" class="dropdown-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        Logout
-                    </a>
-                </div>
-            </div>
-            {% else %}
-            <a href="{{ url_for('auth.login', next=request.path) }}" class="login-link">
-                <img src="{{ url_for('static', filename='huggingface.svg') }}" alt="Hugging Face">
-                Login
-            </a>
-            <!-- Login tip overlay -->
-            <div id="login-tip-overlay" class="login-tip-overlay">
-                <div class="login-tip-content">
-                    Log in to track your votes, see personalized leaderboards, and more!
-                </div>
-                <div class="login-tip-actions">
-                    <button class="login-tip-close" onclick="dismissLoginTip()">Don't show again</button>
-                    <a href="{{ url_for('auth.login', next=request.path) }}" class="login-now-btn">Login now</a>
-                </div>
-                <div class="login-tip-caret"></div>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -1155,19 +1153,6 @@
     <!-- Toast container -->
     <div class="toast-container" id="toast-container"></div>
 
-    {% if not current_user.is_authenticated %}
-    <!-- Mobile login banner -->
-    <div id="login-banner" class="login-banner">
-        <div class="login-banner-content">
-            Log in to track your votes and see personalized leaderboards!
-        </div>
-        <div class="login-banner-actions">
-            <button class="login-banner-close" onclick="dismissLoginTip()">No thanks</button>
-            <a href="{{ url_for('auth.login', next=request.path) }}" class="login-banner-btn">Login</a>
-        </div>
-    </div>
-    {% endif %}
-
     {% block extra_scripts %}{% endblock %}
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script>
@@ -1178,267 +1163,10 @@
             backdrop.classList.toggle('active');
         }
 
-        function toggleUserDropdown(event) {
-            event.stopPropagation();
-            const userAuth = document.querySelector('.user-auth');
-            const userDropdown = document.querySelector('.user-dropdown');
-            userAuth.classList.toggle('active');
-            userDropdown.classList.toggle('active');
-        }
-
-        // Function to check if the login tip has been dismissed
-        function isLoginTipDismissed() {
-            try {
-                return localStorage.getItem('login_tip_dismissed') === 'true';
-            } catch (error) {
-                // Fallback if localStorage is blocked
-                console.warn('localStorage access failed:', error);
-                return false;
-            }
-        }
-
-        // Function to set localStorage when login tip is dismissed
-        function dismissLoginTip() {
-            try {
-                // Store the preference in localStorage
-                localStorage.setItem('login_tip_dismissed', 'true');
-                
-                // Hide all login notifications
-                const loginTip = document.getElementById('login-tip-overlay');
-                const loginBanner = document.getElementById('login-banner');
-                const backdrop = document.querySelector('.login-backdrop');
-                
-                if (loginTip) {
-                    loginTip.classList.remove('show');
-                }
-                
-                if (loginBanner) {
-                    loginBanner.style.display = 'none';
-                }
-                
-                if (backdrop) {
-                    backdrop.style.display = 'none';
-                }
-            } catch (error) {
-                console.warn('localStorage write failed:', error);
-                // Still hide the tips even if localStorage fails
-                const loginTip = document.getElementById('login-tip-overlay');
-                const loginBanner = document.getElementById('login-banner');
-                const backdrop = document.querySelector('.login-backdrop');
-                
-                if (loginTip) {
-                    loginTip.classList.remove('show');
-                }
-                
-                if (loginBanner) {
-                    loginBanner.style.display = 'none';
-                }
-                
-                if (backdrop) {
-                    backdrop.style.display = 'none';
-                }
-            }
-        }
-
-        // Loading overlay functionality
-        document.addEventListener('DOMContentLoaded', function () {
-            // Show login tip if user is not logged in and hasn't dismissed it
-            const loginTipOverlay = document.getElementById('login-tip-overlay');
-            const loginBanner = document.getElementById('login-banner');
-            const loginLink = document.querySelector('.login-link');
-            
-            if (loginLink && !isLoginTipDismissed()) {
-                // Check screen width to determine which login notification to show
-                if (window.innerWidth <= 768) {
-                    // Create and add a backdrop for the login banner
-                    const backdrop = document.createElement('div');
-                    backdrop.className = 'login-backdrop';
-                    backdrop.style.position = 'fixed';
-                    backdrop.style.top = '0';
-                    backdrop.style.left = '0';
-                    backdrop.style.width = '100%';
-                    backdrop.style.height = '100%';
-                    backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                    backdrop.style.zIndex = '9997';
-                    backdrop.style.display = 'none';
-                    document.body.appendChild(backdrop);
-                    
-                    // Show mobile banner with backdrop
-                    if (loginBanner) {
-                        loginBanner.style.display = 'block';
-                        backdrop.style.display = 'block';
-                        
-                        // Add event listener to close banner when clicking backdrop
-                        backdrop.addEventListener('click', function() {
-                            dismissLoginTip();
-                        });
-                    }
-                } else {
-                    // Show desktop popover
-                    if (loginTipOverlay) {
-                        // Position the overlay with Popper.js
-                        const popperInstance = Popper.createPopper(loginLink, loginTipOverlay, {
-                            placement: 'top',
-                            modifiers: [
-                                {
-                                    name: 'offset',
-                                    options: {
-                                        offset: [0, 10],
-                                    },
-                                },
-                            ],
-                        });
-                        
-                        loginTipOverlay.classList.add('show');
-                        popperInstance.update();
-                    }
-                }
-            }
-            
-            // Handle resize events to switch between banner and popover
-            window.addEventListener('resize', function() {
-                if (isLoginTipDismissed()) return;
-                
-                const backdrop = document.querySelector('.login-backdrop');
-                
-                if (window.innerWidth <= 768) {
-                    // Switch to mobile banner
-                    if (loginTipOverlay) {
-                        loginTipOverlay.classList.remove('show');
-                    }
-                    if (loginBanner && backdrop) {
-                        loginBanner.style.display = 'block';
-                        backdrop.style.display = 'block';
-                    }
-                } else {
-                    // Switch to desktop popover
-                    if (loginBanner && backdrop) {
-                        loginBanner.style.display = 'none';
-                        backdrop.style.display = 'none';
-                    }
-                    if (loginTipOverlay && loginLink) {
-                        const popperInstance = Popper.createPopper(loginLink, loginTipOverlay, {
-                            placement: 'top',
-                            modifiers: [
-                                {
-                                    name: 'offset',
-                                    options: {
-                                        offset: [0, 10],
-                                    },
-                                },
-                            ],
-                        });
-                        
-                        loginTipOverlay.classList.add('show');
-                        popperInstance.update();
-                    }
-                }
-            });
-            
-            // Hide the loading overlay when page has loaded
-            const loadingOverlay = document.getElementById('loading-overlay');
-            loadingOverlay.classList.remove('active');
-
-            // Override fetch to handle Turnstile verification errors
-            const originalFetch = window.fetch;
-            window.fetch = async function (url, options) {
-                try {
-                    const response = await originalFetch(url, options);
-
-                    // If we get a 403 error with a specific error message, handle verification
-                    if (response.status === 403) {
-                        const data = await response.clone().json();
-                        if (data && (data.error === "Turnstile verification required" || data.error === "Turnstile verification expired")) {
-                            // Redirect to Turnstile verification page with the current URL as the redirect target
-                            window.location.href = "/turnstile?redirect_url=" + encodeURIComponent(window.location.href);
-                            return new Response(JSON.stringify({ redirecting: true }), {
-                                status: 200,
-                                headers: { 'Content-Type': 'application/json' }
-                            });
-                        }
-                    }
-
-                    return response;
-                } catch (error) {
-                    return Promise.reject(error);
-                }
-            };
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function (event) {
-            const userDropdown = document.querySelector('.user-dropdown');
-            const userAuth = document.querySelector('.user-auth');
-            if (userDropdown && userAuth && userDropdown.classList.contains('active') && !userAuth.contains(event.target)) {
-                userAuth.classList.remove('active');
-                userDropdown.classList.remove('active');
-            }
-        });
-
-        // Toast functionality
-        function openToast(message, type = 'info', duration = 5000) {
-            const toastContainer = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-
-            // Generate icon based on type
-            let iconSvg = '';
-            if (type === 'info') {
-                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
-            } else if (type === 'success') {
-                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
-            } else if (type === 'warning') {
-                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17"/></svg>';
-            } else if (type === 'error') {
-                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-            }
-
-            toast.innerHTML = `
-                <div class="toast-icon">${iconSvg}</div>
-                <div class="toast-content">${message}</div>
-                <div class="toast-close" onclick="closeToast(this.parentNode)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </div>
-                <div class="toast-progress"></div>
-            `;
-
-            toastContainer.appendChild(toast);
-
-            // Animate progress bar
-            const progressBar = toast.querySelector('.toast-progress');
-            progressBar.style.animation = `shrink ${duration / 1000}s linear forwards`;
-            progressBar.style.transformOrigin = 'left';
-            progressBar.style.transform = 'scaleX(1)';
-
-            // Auto-remove toast after duration
-            const timeoutId = setTimeout(() => {
-                closeToast(toast);
-            }, duration);
-
-            // Store timeout ID on the toast element
-            toast.dataset.timeoutId = timeoutId;
-
-            return toast;
-        }
-
-        function closeToast(toast) {
-            // Clear the timeout to prevent duplicate removal attempts
-            if (toast.dataset.timeoutId) {
-                clearTimeout(parseInt(toast.dataset.timeoutId));
-            }
-
-            // Add slide-out animation
-            toast.classList.add('slide-out');
-
-            // Remove toast after animation completes
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
+        // Basic toast functionality for flash messages
+        function openToast(message, type) {
+            // Simple toast implementation if needed
+            console.log(`Toast: ${type} - ${message}`);
         }
     </script>
 </body>
