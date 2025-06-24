@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import uvicorn
 from loguru import logger
-import os
 from dotenv import load_dotenv
 
 # Import TTS providers
@@ -25,7 +24,7 @@ app = FastAPI(
 class TTSRequest(BaseModel):
     text: str
     provider: str
-    model: str = None
+    model: str
 
 
 @app.get("/")
