@@ -1,0 +1,2155 @@
+{% extends "base.html" %}
+
+{% block title %}Arena - TTS Arena{% endblock %}
+
+{% block current_page %}Arena{% endblock %}
+
+{% block content %}
+<!-- Authentication status for JavaScript -->
+<div id="auth-status" data-authenticated="{% if current_user.is_authenticated %}true{% else %}false{% endif %}" style="display: none;"></div>
+
+{% if not current_user.is_authenticated %}
+<!-- Login prompt overlay -->
+<div id="login-prompt-overlay" class="login-prompt-overlay" style="display: none;">
+    <div class="login-prompt-content">
+        <h3>Login Required</h3>
+        <p>You need to be logged in to use TTS Arena. Login to generate audio and vote on models!</p>
+        <div class="login-prompt-actions">
+            <button class="login-prompt-close">Maybe later</button>
+            <a href="{{ url_for('auth.login', next=request.path) }}" class="login-prompt-btn">Login with Hugging Face</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="tabs">
+    <div class="tab active" data-tab="tts">TTS</div>
+    <div class="tab" data-tab="conversational">Conversational</div>
+</div>
+
+<div id="tts-tab" class="tab-content active">
+    <form class="input-container">
+        <div class="input-group">
+            <button type="button" class="segmented-btn random-btn" title="Roll random text">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shuffle-icon lucide-shuffle">
+                    <path d="m18 14 4 4-4 4" />
+                    <path d="m18 2 4 4-4 4" />
+                    <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" />
+                    <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" />
+                    <path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />
+                </svg>
+            </button>
+            <input type="text" class="text-input" placeholder="Enter text to synthesize...">
+            <button type="submit" class="segmented-btn synth-btn">Synthesize</button>
+        </div>
+        <button type="submit" class="mobile-synth-btn">Synthesize</button>
+    </form>
+
+    <div id="initial-keyboard-hint" class="keyboard-hint">
+        Press <kbd>R</kbd> for random text, <kbd>N</kbd> for next random round, <kbd>Enter</kbd> to generate
+    </div>
+
+    <div class="loading-container" style="display: none;">
+        <div class="loader-wrapper">
+            <div class="loader-animation">
+                <div class="sound-wave">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            <div class="loader-text">Generating audio samples...</div>
+            <div class="loader-subtext">This may take up to 30 seconds</div>
+        </div>
+    </div>
+
+    <div class="players-container" style="display: none;">
+        <div class="players-row">
+            <div class="player">
+                <div class="player-label">Model A <span class="model-name-display"></span></div>
+                <div class="wave-player-container" data-model="a"></div>
+                <button class="vote-btn" data-model="a" disabled>
+                    Vote for A
+                    <span class="shortcut-key">A</span>
+                    <span class="vote-loader" style="display: none;">
+                        <div class="vote-spinner"></div>
+                    </span>
+                </button>
+            </div>
+    
+            <div class="player">
+                <div class="player-label">Model B <span class="model-name-display"></span></div>
+                <div class="wave-player-container" data-model="b"></div>
+                <button class="vote-btn" data-model="b" disabled>
+                    Vote for B
+                    <span class="shortcut-key">B</span>
+                    <span class="vote-loader" style="display: none;">
+                        <div class="vote-spinner"></div>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="vote-results" style="display: none;">
+        <h3 class="results-heading">Vote Recorded!</h3>
+        <div class="results-content">
+            <div class="chosen-model">
+                <strong>You chose:</strong> <span class="chosen-model-name"></span>
+            </div>
+            <div class="rejected-model">
+                <strong>Over:</strong> <span class="rejected-model-name"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="next-round-container" style="display: none;">
+        <button class="next-round-btn">Next Round</button>
+    </div>
+
+    <div id="playback-keyboard-hint" class="keyboard-hint" style="display: none;">
+        Press <kbd>Space</kbd> to play/pause, <kbd>A</kbd>/<kbd>B</kbd> to vote, <kbd>R</kbd> for random text, <kbd>N</kbd> for next random round
+    </div>
+</div>
+
+<div id="conversational-tab" class="tab-content">
+    <div class="podcast-container">
+        <div class="podcast-controls">
+            <button type="button" class="segmented-btn random-script-btn" title="Load random script">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shuffle-icon lucide-shuffle">
+                    <path d="m18 14 4 4-4 4" />
+                    <path d="m18 2 4 4-4 4" />
+                    <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" />
+                    <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" />
+                    <path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />
+                </svg>
+                Random Script
+            </button>
+            <button type="button" class="podcast-synth-btn">Generate Podcast</button>
+        </div>
+        
+        <div class="podcast-script-container">
+            <div class="podcast-lines">
+                <!-- Script lines will be added here -->
+            </div>
+            
+            <button type="button" class="add-line-btn">+ Add Line</button>
+            
+            <div class="keyboard-hint podcast-keyboard-hint">
+                Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or <kbd>Alt</kbd>+<kbd>Enter</kbd> to add a new line
+            </div>
+        </div>
+        
+        <div class="podcast-loading-container" style="display: none;">
+            <div class="loader-wrapper">
+                <div class="loader-animation">
+                    <div class="sound-wave">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="loader-text">Generating podcast...</div>
+                <div class="loader-subtext">This may take up to a minute</div>
+            </div>
+        </div>
+
+        <div class="podcast-player-container" style="display: none;">
+            <div class="players-row">
+                <div class="player">
+                    <div class="player-label">Model A <span class="model-name-display"></span></div>
+                    <div class="podcast-wave-player-a"></div>
+                    <button class="vote-btn" data-model="a" disabled>
+                        Vote for A
+                        <span class="shortcut-key">A</span>
+                        <span class="vote-loader" style="display: none;">
+                            <div class="vote-spinner"></div>
+                        </span>
+                    </button>
+                </div>
+        
+                <div class="player">
+                    <div class="player-label">Model B <span class="model-name-display"></span></div>
+                    <div class="podcast-wave-player-b"></div>
+                    <button class="vote-btn" data-model="b" disabled>
+                        Vote for B
+                        <span class="shortcut-key">B</span>
+                        <span class="vote-loader" style="display: none;">
+                            <div class="vote-spinner"></div>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="podcast-vote-results vote-results" style="display: none;">
+                <h3 class="results-heading">Vote Recorded!</h3>
+                <div class="results-content">
+                    <div class="chosen-model">
+                        <strong>You chose:</strong> <span class="chosen-model-name"></span>
+                    </div>
+                    <div class="rejected-model">
+                        <strong>Over:</strong> <span class="rejected-model-name"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="podcast-next-round-container next-round-container" style="display: none;">
+                <button class="podcast-next-round-btn next-round-btn">Next Round <span class="shortcut-key">N</span></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/waveplayer.css') }}">
+<script src="https://unpkg.com/wavesurfer.js@6/dist/wavesurfer.min.js"></script>
+<style>
+    .input-container {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 24px;
+    }
+    
+    .input-group {
+        display: flex;
+        width: 100%;
+        border-radius: var(--radius);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+    
+    /* Override base styles to remove duplicate borders */
+    .input-group .text-input {
+        flex: 1;
+        padding: 12px 16px;
+        border: none;
+        border-radius: 0;
+        font-size: 16px;
+        outline: none;
+        height: 48px;
+        transition: none;
+    }
+    
+    .input-group .text-input:focus {
+        border: none;
+        outline: none;
+        background-color: rgba(80, 70, 229, 0.03);
+    }
+    
+    .segmented-btn {
+        background-color: white;
+        border: none;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .random-btn {
+        width: 48px;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .random-btn svg {
+        color: var(--primary-color);
+    }
+    
+    .synth-btn {
+        padding: 0 24px;
+        font-weight: 500;
+        border-left: 1px solid var(--border-color);
+        background-color: var(--primary-color);
+        color: white;
+        font-size: 1em;
+    }
+    
+    .synth-btn:hover {
+        background-color: #4038c7;
+    }
+    
+    .random-btn:hover {
+        background-color: var(--light-gray);
+    }
+    
+    .mobile-synth-btn {
+        display: none;
+        width: 100%;
+        padding: 12px;
+        margin-top: 12px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 1em;
+    }
+    
+    .loading-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 40px 0;
+    }
+    
+    .loader-wrapper {
+        text-align: center;
+    }
+    
+    .loader-animation {
+        margin-bottom: 24px;
+    }
+    
+    .loader-text {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-color);
+    }
+    
+    .loader-subtext {
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .sound-wave {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .sound-wave span {
+        display: block;
+        width: 6px;
+        height: 20px;
+        background-color: var(--primary-color);
+        border-radius: 8px;
+        animation: sound-wave-animation 1.2s infinite ease-in-out;
+    }
+    
+    .sound-wave span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .sound-wave span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    .sound-wave span:nth-child(4) {
+        animation-delay: 0.6s;
+    }
+    
+    .sound-wave span:nth-child(5) {
+        animation-delay: 0.8s;
+    }
+    
+    .sound-wave span:nth-child(6) {
+        animation-delay: 1s;
+    }
+    
+    @keyframes sound-wave-animation {
+        0%, 100% {
+            height: 20px;
+        }
+        50% {
+            height: 50px;
+        }
+    }
+    
+    .vote-btn {
+        position: relative;
+        color: black;
+        font-size: 1rem;
+    }
+    
+    .vote-btn.selected {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .vote-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .vote-loader {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .vote-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(80, 70, 229, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s linear infinite;
+    }
+    
+    .next-round-container {
+        margin-top: 24px;
+        text-align: center;
+    }
+    
+    .next-round-btn {
+        padding: 12px 24px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-weight: 500;
+        cursor: pointer;
+        position: relative;
+        width: 100%;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+    }
+    
+    .next-round-btn:hover {
+        background-color: #4038c7;
+    }
+    
+    /* Vote results styling */
+    .vote-results {
+        background-color: #f0f4ff;
+        border: 1px solid #d0d7f7;
+        border-radius: var(--radius);
+        padding: 16px;
+        margin: 24px 0;
+    }
+    
+    .results-heading {
+        color: var(--primary-color);
+        margin-bottom: 12px;
+        font-size: 18px;
+    }
+    
+    .results-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    /* Tab styling */
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 24px;
+    }
+    
+    .tab {
+        padding: 12px 24px;
+        cursor: pointer;
+        position: relative;
+        font-weight: 500;
+    }
+    
+    .tab.active {
+        color: var(--primary-color);
+    }
+    
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--primary-color);
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Coming soon styling */
+    .coming-soon-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 20px;
+        background-color: var(--light-gray);
+        border-radius: var(--radius);
+        margin: 20px 0;
+    }
+    
+    .coming-soon-icon {
+        color: var(--primary-color);
+        margin-bottom: 20px;
+    }
+    
+    .coming-soon-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--text-color);
+    }
+    
+    .coming-soon-text {
+        font-size: 16px;
+        color: #666;
+        max-width: 500px;
+        line-height: 1.5;
+    }
+    
+    .model-name-display {
+        font-size: 0.9em;
+        color: #666;
+        font-style: italic;
+    }
+
+    /* WaveSurfer Custom Styles */
+    .player {
+        padding-bottom: 20px;
+    }
+
+    .wave-player-container {
+        margin-bottom: 16px;
+    }
+
+    /* Keyboard shortcut hint */
+    .keyboard-hint {
+        text-align: center;
+        margin-top: 8px;
+        font-size: 13px;
+        color: #888;
+    }
+
+    .keyboard-hint kbd {
+        display: inline-block;
+        padding: 3px 5px;
+        font-size: 11px;
+        line-height: 10px;
+        color: #444;
+        vertical-align: middle;
+        background-color: #fafafa;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+        margin: 0 2px;
+    }
+    
+    @media (max-width: 768px) {
+        .input-group {
+            border-radius: var(--radius);
+        }
+        
+        .synth-btn {
+            display: none;
+        }
+        
+        .mobile-synth-btn {
+            display: block;
+        }
+        
+        /* Stack players vertically on mobile */
+        .players-row {
+            flex-direction: column;
+            gap: 16px;
+        }
+    }
+    /* Dark mode styles */
+    @media (prefers-color-scheme: dark) {
+        .coming-soon-container {
+            background-color: var(--light-gray);
+        }
+        
+        .coming-soon-text {
+            color: #aaa;
+        }
+        
+        .model-name-display {
+            color: #aaa;
+        }
+        
+        /* Fix vote recorded section in dark mode */
+        .vote-results {
+            background-color: var(--light-gray);
+            border-color: var(--border-color);
+        }
+        
+        .results-heading {
+            color: var(--primary-color);
+        }
+        
+        .results-content {
+            color: var(--text-color);
+        }
+        
+        .chosen-model,
+        .rejected-model {
+            color: var(--text-color);
+        }
+        
+        .chosen-model strong,
+        .rejected-model strong {
+            color: var(--text-color);
+        }
+        
+        .chosen-model-name,
+        .rejected-model-name {
+            color: var(--text-color);
+        }
+        
+        .vote-btn {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .vote-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--border-color);
+        }
+        
+        .vote-btn.selected {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .shortcut-key {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .vote-btn.selected .shortcut-key {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .random-btn {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .random-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .vote-recorded {
+            background-color: var(--light-gray);
+            border-color: var(--border-color);
+        }
+        
+        /* Ensure border-radius is maintained during loading state */
+        .vote-btn.loading {
+            border-radius: var(--radius);
+        }
+
+        /* Dark mode keyboard hint */
+        .keyboard-hint {
+            color: #aaa;
+        }
+
+        .keyboard-hint kbd {
+            color: #ddd;
+            background-color: #333;
+            border-color: #555;
+            box-shadow: 0 1px 0 rgba(255,255,255,0.1);
+        }
+    }
+    
+    /* Podcast UI styles */
+    .podcast-container {
+        width: 100%;
+    }
+    
+    .podcast-controls {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    
+    .random-script-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 16px;
+        height: 40px;
+        background-color: white;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .random-script-btn:hover {
+        background-color: var(--light-gray);
+    }
+    
+    .podcast-synth-btn {
+        padding: 0 24px;
+        height: 40px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .podcast-synth-btn:hover {
+        background-color: #4038c7;
+    }
+    
+    .podcast-script-container {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    
+    .podcast-lines {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .podcast-line {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .speaker-label {
+        width: 120px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        border-right: 1px solid var(--border-color);
+        background-color: var(--light-gray);
+        white-space: nowrap;
+    }
+    
+    .speaker-1 {
+        color: #3b82f6;
+    }
+    
+    .speaker-2 {
+        color: #ef4444;
+    }
+    
+    .line-input {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        outline: none;
+        font-size: 1em;
+    }
+    
+    .line-input:focus {
+        background-color: rgba(80, 70, 229, 0.03);
+    }
+    
+    .remove-line-btn {
+        width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        border-left: 1px solid var(--border-color);
+        cursor: pointer;
+        color: #888;
+        transition: color 0.2s, background-color 0.2s;
+    }
+    
+    .remove-line-btn:hover {
+        color: #ef4444;
+        background-color: rgba(239, 68, 68, 0.1);
+    }
+    
+    .add-line-btn {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        background-color: var(--light-gray);
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .add-line-btn:hover {
+        background-color: rgba(80, 70, 229, 0.1);
+    }
+    
+    .podcast-keyboard-hint {
+        padding: 10px;
+        text-align: center;
+        background-color: var(--light-gray);
+        border-top: 1px solid var(--border-color);
+        margin-top: 0;
+        font-size: 13px;
+    }
+    
+    .podcast-player {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    
+    .podcast-wave-player {
+        margin: 20px 0;
+    }
+    
+    .podcast-transcript-container {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .podcast-transcript {
+        margin-top: 12px;
+        line-height: 1.6;
+    }
+    
+    .transcript-line {
+        margin-bottom: 12px;
+    }
+    
+    .transcript-speaker {
+        font-weight: 600;
+        margin-right: 8px;
+    }
+    
+    .transcript-speaker.speaker-1 {
+        color: #3b82f6;
+    }
+    
+    .transcript-speaker.speaker-2 {
+        color: #ef4444;
+    }
+    
+    /* Responsive styles for podcast UI */
+    @media (max-width: 768px) {
+        .podcast-controls {
+            flex-direction: column;
+        }
+        
+        .random-script-btn,
+        .podcast-synth-btn {
+            width: 100%;
+            height: 48px;
+        }
+        
+        /* Stack podcast players vertically on mobile */
+        .podcast-player-container .players-row {
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .podcast-line {
+            flex-direction: column;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+        
+        .speaker-label {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 10px;
+            justify-content: flex-start;
+        }
+        
+        .line-input {
+            width: 100%;
+            padding: 8px 10px;
+        }
+        
+        .remove-line-btn {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            border-left: none;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+        }
+        
+        .podcast-line {
+            position: relative;
+        }
+        
+        /* Dark mode adjustments for mobile */
+        @media (prefers-color-scheme: dark) {
+            .remove-line-btn {
+                background-color: rgba(50, 50, 60, 0.7);
+            }
+        }
+    }
+    
+    /* Dark mode styles for podcast UI */
+    @media (prefers-color-scheme: dark) {
+        .random-script-btn {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+        .add-line-btn {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .line-input {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+        }
+        
+        .line-input:focus {
+            background-color: rgba(108, 99, 255, 0.1);
+        }
+    }
+
+    .podcast-loading-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background-color: rgba(255, 255, 255, 0.9);
+        z-index: 1000;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        .podcast-loading-container {
+            background-color: rgba(18, 18, 24, 0.9);
+        }
+    }
+
+    .podcast-vote-results {
+        background-color: #f0f4ff;
+        border: 1px solid #d0d7f7;
+        border-radius: var(--radius);
+        padding: 16px;
+        margin: 24px 0;
+    }
+    
+    .podcast-next-round-container {
+        margin-top: 24px;
+        text-align: center;
+    }
+    
+    .podcast-next-round-btn {
+        padding: 12px 24px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-weight: 500;
+        cursor: pointer;
+        position: relative;
+        width: 100%;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+    }
+    
+    .podcast-next-round-btn:hover {
+        background-color: #4038c7;
+    }
+    
+    /* Dark mode adjustments */
+    @media (prefers-color-scheme: dark) {
+        .podcast-vote-results {
+            background-color: var(--light-gray);
+            border-color: var(--border-color);
+        }
+    }
+
+    /* Login prompt overlay styles */
+    .login-prompt-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-prompt-content {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-prompt-content h3 {
+        margin: 0 0 16px 0;
+        color: var(--text-color);
+        font-size: 24px;
+    }
+
+    .login-prompt-content p {
+        margin: 0 0 24px 0;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .login-prompt-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .login-prompt-close {
+        padding: 12px 24px;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .login-prompt-close:hover {
+        background: var(--light-gray);
+    }
+
+    .login-prompt-btn {
+        padding: 12px 24px;
+        background: var(--primary-color);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-block;
+    }
+
+    .login-prompt-btn:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
+    /* Dark mode for login prompt */
+    @media (prefers-color-scheme: dark) {
+        .login-prompt-content {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+        }
+    }
+</style>
+{% endblock %} 
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/waveplayer.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check authentication status
+        const authStatus = document.getElementById('auth-status');
+        const isAuthenticated = authStatus ? authStatus.dataset.authenticated === 'true' : false;
+        const loginPromptOverlay = document.getElementById('login-prompt-overlay');
+        const loginPromptClose = document.querySelector('.login-prompt-close');
+
+        // Function to show login prompt
+        function showLoginPrompt() {
+            if (loginPromptOverlay) {
+                loginPromptOverlay.style.display = 'flex';
+            }
+        }
+
+        // Function to hide login prompt
+        function hideLoginPrompt() {
+            if (loginPromptOverlay) {
+                loginPromptOverlay.style.display = 'none';
+            }
+        }
+
+        // Add event listener to close button
+        if (loginPromptClose) {
+            loginPromptClose.addEventListener('click', hideLoginPrompt);
+        }
+
+        // Close prompt when clicking outside
+        if (loginPromptOverlay) {
+            loginPromptOverlay.addEventListener('click', function(e) {
+                if (e.target === loginPromptOverlay) {
+                    hideLoginPrompt();
+                }
+            });
+        }
+
+        const synthForm = document.querySelector('.input-container');
+        const synthBtn = document.querySelector('.synth-btn');
+        const mobileSynthBtn = document.querySelector('.mobile-synth-btn');
+        const loadingContainer = document.querySelector('.loading-container');
+        const playersContainer = document.querySelector('.players-container');
+        const voteButtons = document.querySelectorAll('.vote-btn');
+        const textInput = document.querySelector('.text-input');
+        const nextRoundBtn = document.querySelector('.next-round-btn');
+        const nextRoundContainer = document.querySelector('.next-round-container');
+        const randomBtn = document.querySelector('.random-btn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const voteResultsContainer = document.querySelector('.vote-results');
+        const chosenModelNameElement = document.querySelector('.chosen-model-name');
+        const rejectedModelNameElement = document.querySelector('.rejected-model-name');
+        const modelNameDisplays = document.querySelectorAll('.model-name-display');
+        const wavePlayerContainers = document.querySelectorAll('.wave-player-container');
+        
+        // Get references to the keyboard hint elements
+        const initialKeyboardHint = document.getElementById('initial-keyboard-hint');
+        const playbackKeyboardHint = document.getElementById('playback-keyboard-hint');
+        
+        let bothSamplesPlayed = false;
+        let currentSessionId = null;
+        let modelNames = { a: '', b: '' };
+        let wavePlayers = { a: null, b: null };
+        let cachedSentences = []; // To store sentences available in cache
+        
+        // Initialize WavePlayers with mobile settings
+        wavePlayerContainers.forEach(container => {
+            const model = container.dataset.model;
+            wavePlayers[model] = new WavePlayer(container, {
+                // Add mobile-friendly options but hide native controls
+                backend: 'MediaElement',
+                mediaControls: false // Hide native audio controls
+            });
+        });
+        
+        // Load fallback sentences directly from Flask variable (JSON string)
+        // Assign to a variable first to help linters
+        // eslint-disable-next-line
+        const fallbackSentencesJson = {{ harvard_sentences | tojson | safe }};
+        const fallbackRandomTexts = JSON.parse(fallbackSentencesJson);
+        
+        // Fetch cached sentences on load
+        function fetchCachedSentences() {
+            fetch('/api/tts/cached-sentences')
+                .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch cached sentences'))
+                .then(data => {
+                    cachedSentences = data;
+                    console.log(`Fetched ${cachedSentences.length} cached sentences.`);
+                })
+                .catch(error => {
+                    console.error('Error fetching cached sentences:', error);
+                    // Keep cachedSentences as empty array, fallback will be used
+                });
+        }
+        
+        // Check URL hash for direct tab access
+        function checkHashAndSetTab() {
+            const hash = window.location.hash.toLowerCase();
+            if (hash === '#conversational') {
+                // Switch to conversational tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                document.querySelector('.tab[data-tab="conversational"]').classList.add('active');
+                document.getElementById('conversational-tab').classList.add('active');
+            } else if (hash === '#tts') {
+                // Switch to TTS tab (explicit)
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                document.querySelector('.tab[data-tab="tts"]').classList.add('active');
+                document.getElementById('tts-tab').classList.add('active');
+            }
+        }
+        
+        // Check hash on page load
+        checkHashAndSetTab();
+        
+        // Listen for hash changes
+        window.addEventListener('hashchange', checkHashAndSetTab);
+        
+        // Tab switching functionality
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.dataset.tab;
+                
+                // Update URL hash without page reload
+                history.replaceState(null, null, `#${tabId}`);
+                
+                // Remove active class from all tabs and contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                this.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+                
+                // Reset TTS tab state if switching away from it
+                if (tabId !== 'tts') {
+                    resetToInitialState();
+                }
+            });
+        });
+        
+        function handleSynthesize(e) {
+            if (e) {
+                e.preventDefault();
+            }
+
+            // Check authentication first
+            if (!isAuthenticated) {
+                showLoginPrompt();
+                return;
+            }
+
+            const text = textInput.value.trim();
+            if (!text) {
+                openToast("Please enter some text to synthesize", "warning");
+                return;
+            }
+            
+            if (text.length > 1000) {
+                openToast("Text is too long. Please keep it under 1000 characters.", "warning");
+                return;
+            }
+
+            textInput.blur();
+            
+            // Show loading animation and hide hints
+            loadingContainer.style.display = 'flex';
+            playersContainer.style.display = 'none';
+            voteResultsContainer.style.display = 'none';
+            nextRoundContainer.style.display = 'none';
+            initialKeyboardHint.style.display = 'none'; 
+            playbackKeyboardHint.style.display = 'none';
+            
+            // Reset vote buttons
+            voteButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('selected');
+                btn.querySelector('.vote-loader').style.display = 'none';
+            });
+            
+            // Clear model name displays
+            modelNameDisplays.forEach(display => {
+                display.textContent = '';
+            });
+            
+            // Reset the flag for both samples played
+            bothSamplesPlayed = false;
+            
+            // Call the API to generate TTS
+            fetch('/api/tts/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to generate TTS');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                currentSessionId = data.session_id;
+                
+                // Load audio in waveplayers
+                wavePlayers.a.loadAudio(data.audio_a);
+                wavePlayers.b.loadAudio(data.audio_b);
+                
+                // Show players and playback hint, hide initial hint
+                loadingContainer.style.display = 'none';
+                playersContainer.style.display = 'flex';
+                initialKeyboardHint.style.display = 'none';
+                playbackKeyboardHint.style.display = 'block';
+                
+                // Setup automatic sequential playback
+                wavePlayers.a.wavesurfer.once('ready', function() {
+                    wavePlayers.a.play();
+                    
+                    // When audio A ends, play audio B
+                    wavePlayers.a.wavesurfer.once('finish', function() {
+                        // Wait a short moment before playing B
+                        setTimeout(() => {
+                            wavePlayers.b.play();
+                            
+                            // When audio B ends, enable voting
+                            wavePlayers.b.wavesurfer.once('finish', function() {
+                                bothSamplesPlayed = true;
+                                voteButtons.forEach(btn => {
+                                    btn.disabled = false;
+                                });
+                            });
+                        }, 500);
+                    });
+                });
+
+                // Fetch cached sentences again to update the list
+                fetchCachedSentences();
+            })
+            .catch(error => {
+                loadingContainer.style.display = 'none';
+                
+                // Handle authentication errors specially
+                if (error.message.includes('logged in to generate') || error.message.includes('logged in to vote')) {
+                    openToast("Please log in to use TTS Arena. <a href='{{ url_for('auth.login', next=request.path) }}' style='color: white; text-decoration: underline;'>Login now</a>", "error");
+                } else {
+                    openToast(error.message, "error");
+                }
+                console.error('Error:', error);
+            });
+        }
+        
+        function handleVote(model) {
+            // Disable both vote buttons
+            voteButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.dataset.model === model) {
+                    btn.querySelector('.vote-loader').style.display = 'flex';
+                }
+            });
+            
+            // Send vote to server
+            fetch('/api/tts/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: currentSessionId,
+                    chosen_model: model
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to submit vote');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Hide loaders
+                voteButtons.forEach(btn => {
+                    btn.querySelector('.vote-loader').style.display = 'none';
+                    
+                    // Highlight the selected button
+                    if (btn.dataset.model === model) {
+                        btn.classList.add('selected');
+                    }
+                });
+
+
+                // Store model names from vote response
+                if (data.chosen_model && data.chosen_model.name) {
+                    modelNames.a = data.names.a;
+                    modelNames.b = data.names.b;
+                }
+                
+                // Now display model names after voting
+                modelNameDisplays[0].textContent = modelNames.a ? `(${modelNames.a})` : '';
+                modelNameDisplays[1].textContent = modelNames.b ? `(${modelNames.b})` : '';
+                
+                // Show vote results
+                chosenModelNameElement.textContent = data.chosen_model.name;
+                rejectedModelNameElement.textContent = data.rejected_model.name;
+                voteResultsContainer.style.display = 'block';
+                
+                // Show next round button
+                nextRoundContainer.style.display = 'block';
+                
+                // Show success toast
+                openToast("Vote recorded successfully!", "success");
+            })
+            .catch(error => {
+                // Re-enable vote buttons
+                voteButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.querySelector('.vote-loader').style.display = 'none';
+                });
+                
+                // Handle authentication errors specially
+                if (error.message.includes('logged in to vote')) {
+                    openToast("Please log in to vote. <a href='{{ url_for('auth.login', next=request.path) }}' style='color: white; text-decoration: underline;'>Login now</a>", "error");
+                } else {
+                    openToast(error.message, "error");
+                }
+                console.error('Error:', error);
+            });
+        }
+        
+        function resetToInitialState() {
+            // Hide players, results, and next round button
+            playersContainer.style.display = 'none';
+            voteResultsContainer.style.display = 'none';
+            nextRoundContainer.style.display = 'none';
+            
+            // Reset vote buttons
+            voteButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('selected');
+                btn.querySelector('.vote-loader').style.display = 'none';
+            });
+            
+            // Clear model name displays
+            modelNameDisplays.forEach(display => {
+                display.textContent = '';
+            });
+            
+            // Reset model names
+            modelNames = { a: '', b: '' };
+            
+            // Clear text input
+            textInput.value = '';
+            
+            // Stop any playing audio and destroy wavesurfers
+            for (const model in wavePlayers) {
+                if (wavePlayers[model]) {
+                    wavePlayers[model].stop();
+                }
+            }
+            
+            // Reset session
+            currentSessionId = null;
+            
+            // Reset the flag for both samples played
+            bothSamplesPlayed = false;
+
+            // Show initial hint, hide playback hint
+            initialKeyboardHint.style.display = 'block';
+            playbackKeyboardHint.style.display = 'none';
+        }
+        
+        function handleRandom() {
+            let selectedText = '';
+            if (cachedSentences && cachedSentences.length > 0) {
+                // Select a random text from the cache
+                selectedText = cachedSentences[Math.floor(Math.random() * cachedSentences.length)];
+                console.log("Using random sentence from cache.");
+            } else {
+                // Fallback to the initial list if cache is empty or failed to load
+                console.log("Cache empty or unavailable, using random sentence from fallback list.");
+                if (fallbackRandomTexts && fallbackRandomTexts.length > 0) {
+                    selectedText = fallbackRandomTexts[Math.floor(Math.random() * fallbackRandomTexts.length)];
+                } else {
+                    // If fallback list is also empty, do nothing. Log an error.
+                    console.error("Both cached sentences and fallback sentences are unavailable.");
+                    return;
+                }
+            }
+            textInput.value = selectedText;
+            textInput.focus();
+        }
+        
+        function showListenToastMessage() {
+            openToast("Please listen to both audio samples before voting", "info");
+        }
+        
+        // New function for N shortcut: Random + Synthesize
+        function handleNextRandomRound() {
+            console.log("Handling Next Random Round (N shortcut)");
+            handleRandom(); // Selects random text and puts it in input
+            
+            // Use setTimeout to ensure the input value is updated before synthesizing
+            // Especially important if handleRandom involves async operations (though it doesn't currently)
+            setTimeout(() => {
+                handleSynthesize(); // Triggers synthesis with the text now in the input
+            }, 0); 
+        }
+
+        // Add submit event listener to form
+        synthForm.addEventListener('submit', handleSynthesize);
+        
+        // Add click event listeners to vote buttons
+        voteButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (bothSamplesPlayed) {
+                    const model = this.dataset.model;
+                    handleVote(model);
+                } else {
+                    showListenToastMessage();
+                }
+            });
+        });
+        
+        // Add keyboard shortcut listeners
+        document.addEventListener('keydown', function(e) {
+            // Check if TTS tab is active
+            const ttsTab = document.getElementById('tts-tab');
+            if (!ttsTab.classList.contains('active')) return;
+            
+            // Only process keyboard shortcuts if text input is not focused
+            if (document.activeElement === textInput) {
+                // Allow Enter key to submit form from text input
+                if (e.key === 'Enter') {
+                    // Check if Shift, Ctrl, Alt, or Meta keys are pressed
+                    if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                        e.preventDefault(); // Prevent default form submission if needed
+                        handleSynthesize(); // Trigger synthesis
+                    }
+                }
+                return; // Don't process other keys if input is focused
+            }
+
+            // Allow Enter key to submit form when button is focused maybe?
+            // Or just generally allow Enter if not focused on input
+             if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                 // Check if the initial form is visible (or loading is not happening)
+                 if (playersContainer.style.display === 'none' && loadingContainer.style.display === 'none') {
+                    e.preventDefault();
+                    handleSynthesize();
+                 }
+                 // Do nothing if players are visible (don't want Enter to re-submit)
+            } else if (e.key.toLowerCase() === 'a') {
+                if (bothSamplesPlayed && !voteButtons[0].disabled) {
+                    handleVote('a');
+                } else if (playersContainer.style.display !== 'none' && !bothSamplesPlayed) {
+                    showListenToastMessage();
+                }
+            } else if (e.key.toLowerCase() === 'b') {
+                if (bothSamplesPlayed && !voteButtons[1].disabled) {
+                    handleVote('b');
+                } else if (playersContainer.style.display !== 'none' && !bothSamplesPlayed) {
+                    showListenToastMessage();
+                }
+            } else if (e.key.toLowerCase() === 'n') {
+                // N for Next Random Round (works anytime except when input focused)
+                if (!e.ctrlKey && !e.metaKey && !e.altKey) { // Ensure Alt isn't pressed either
+                    e.preventDefault();
+                    handleNextRandomRound(); // New function for random + synthesize
+                }
+            } else if (e.key.toLowerCase() === 'r') {
+                // R for Random Text (works anytime except when input focused)
+                if (!e.ctrlKey && !e.metaKey && !e.altKey) { // Ensure Alt isn't pressed either
+                    e.preventDefault();
+                    handleRandom();
+                }
+            } else if (e.key === ' ') {
+                // Space to play/pause current audio
+                if (playersContainer.style.display !== 'none') {
+                    e.preventDefault();
+                    // If A is playing, toggle A, else if B is playing, toggle B, else play A
+                    if (wavePlayers.a.isPlaying) {
+                        wavePlayers.a.togglePlayPause();
+                    } else if (wavePlayers.b.isPlaying) {
+                        wavePlayers.b.togglePlayPause();
+                    } else {
+                        wavePlayers.a.play();
+                    }
+                }
+            }
+        });
+        
+        // Add event listener for random button
+        randomBtn.addEventListener('click', handleRandom);
+        
+        // Add event listener for next round button
+        nextRoundBtn.addEventListener('click', resetToInitialState);
+        
+        // Fetch cached sentences when the DOM is ready
+        fetchCachedSentences();
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables for podcast UI
+        const podcastContainer = document.querySelector('.podcast-container');
+        const podcastLinesContainer = document.querySelector('.podcast-lines');
+        const addLineBtn = document.querySelector('.add-line-btn');
+        const randomScriptBtn = document.querySelector('.random-script-btn');
+        const podcastSynthBtn = document.querySelector('.podcast-synth-btn');
+        const podcastLoadingContainer = document.querySelector('.podcast-loading-container');
+        const podcastPlayerContainer = document.querySelector('.podcast-player-container');
+        const podcastWavePlayerA = document.querySelector('.podcast-wave-player-a');
+        const podcastWavePlayerB = document.querySelector('.podcast-wave-player-b');
+        const podcastVoteButtons = podcastPlayerContainer.querySelectorAll('.vote-btn');
+        const podcastVoteResults = podcastPlayerContainer.querySelector('.vote-results');
+        const podcastNextRoundContainer = podcastPlayerContainer.querySelector('.next-round-container');
+        const podcastNextRoundBtn = podcastPlayerContainer.querySelector('.next-round-btn');
+        const chosenModelNameElement = podcastVoteResults.querySelector('.chosen-model-name');
+        const rejectedModelNameElement = podcastVoteResults.querySelector('.rejected-model-name');
+        
+        let podcastWavePlayers = { a: null, b: null };
+        let bothPodcastSamplesPlayed = false;
+        let currentPodcastSessionId = null;
+        let podcastModelNames = { a: 'Model A', b: 'Model B' };
+        
+        // Sample random scripts for the podcast
+        const randomScripts = [
+            [
+                { speaker: 1, text: "Welcome to our podcast about artificial intelligence. Today we're discussing the latest advances in text-to-speech technology." },
+                { speaker: 2, text: "That's right! Text-to-speech has come a long way in recent years. The voices sound increasingly natural." },
+                { speaker: 1, text: "What do you think are the most impressive recent developments?" },
+                { speaker: 2, text: "I'd say the emotion and inflection that modern TTS systems can convey is truly remarkable." }
+            ],
+            [
+                { speaker: 1, text: "So today we're talking about climate change and its effects on our planet." },
+                { speaker: 2, text: "It's such an important topic. We're seeing more extreme weather events every year." },
+                { speaker: 1, text: "Absolutely. And the science is clear that human activity is the primary driver." },
+                { speaker: 2, text: "What can individuals do to help address this global challenge?" }
+            ],
+            [
+                { speaker: 1, text: "In today's episode, we're exploring the world of modern cinema." },
+                { speaker: 2, text: "Film has evolved so much since its early days. What's your favorite era of movies?" },
+                { speaker: 1, text: "I'm particularly fond of the 1970s New Hollywood movement. Films like The Godfather and Taxi Driver really pushed boundaries." },
+                { speaker: 2, text: "Interesting choice! I'm more drawn to contemporary international cinema, especially from directors like Bong Joon-ho and Park Chan-wook." }
+            ],
+            [
+                { speaker: 1, text: "Today we're discussing the future of remote work. How do you think it's changed the workplace?" },
+                { speaker: 2, text: "I believe it's revolutionized how we think about productivity and work-life balance." },
+                { speaker: 1, text: "Do you think companies will continue to offer remote options post-pandemic?" },
+                { speaker: 2, text: "Absolutely. Companies that don't embrace flexibility will struggle to attract top talent." }
+            ],
+            [
+                { speaker: 1, text: "Let's talk about the latest developments in renewable energy." },
+                { speaker: 2, text: "Solar and wind have become increasingly cost-effective in recent years." },
+                { speaker: 1, text: "What about emerging technologies like green hydrogen?" },
+                { speaker: 2, text: "That's a fascinating area with huge potential, especially for industries that are difficult to electrify." }
+            ],
+            [
+                { speaker: 1, text: "The world of cryptocurrency has seen massive changes lately. What's your take?" },
+                { speaker: 2, text: "It's certainly volatile, but I think blockchain technology has applications beyond just digital currency." },
+                { speaker: 1, text: "Do you see it becoming mainstream in the financial sector?" },
+                { speaker: 2, text: "Parts of it already are. Central banks are exploring digital currencies, and major companies are investing in blockchain." }
+            ],
+            [
+                { speaker: 1, text: "Mental health awareness has grown significantly in recent years." },
+                { speaker: 2, text: "Yes, and it's about time. The stigma around seeking help is finally starting to diminish." },
+                { speaker: 1, text: "What do you think has driven this change?" },
+                { speaker: 2, text: "I think social media has played a role, with more people openly sharing their experiences." }
+            ],
+            [
+                { speaker: 1, text: "Space exploration is entering an exciting new era with private companies leading the charge." },
+                { speaker: 2, text: "The commercialization of space has definitely accelerated innovation in the field." },
+                { speaker: 1, text: "Do you think we'll see humans on Mars in our lifetime?" },
+                { speaker: 2, text: "I'm optimistic. The technology is advancing rapidly, and there's strong motivation from both public and private sectors." }
+            ],
+            [
+                { speaker: 1, text: "Today's topic is sustainable fashion. How can consumers make more ethical choices?" },
+                { speaker: 2, text: "It starts with buying less and choosing quality items that last longer." },
+                { speaker: 1, text: "What about the responsibility of fashion brands themselves?" },
+                { speaker: 2, text: "They need to be transparent about their supply chains and commit to reducing their environmental impact." }
+            ],
+            [
+                { speaker: 1, text: "Let's discuss the evolution of social media and its impact on society." },
+                { speaker: 2, text: "It's transformed how we connect, but also created new challenges like misinformation and privacy concerns." },
+                { speaker: 1, text: "Do you think regulation is the answer?" },
+                { speaker: 2, text: "Partly, but digital literacy education is equally important so people can navigate these platforms responsibly." }
+            ],
+            [
+                { speaker: 1, text: "The field of genomics has seen remarkable progress. What excites you most about it?" },
+                { speaker: 2, text: "Personalized medicine is fascinating - the idea that treatments can be tailored to an individual's genetic makeup." },
+                { speaker: 1, text: "What about the ethical considerations?" },
+                { speaker: 2, text: "Those are crucial. We need robust frameworks to ensure these technologies are used responsibly." }
+            ],
+            [
+                { speaker: 1, text: "Urban planning is facing new challenges in the 21st century. What trends are you seeing?" },
+                { speaker: 2, text: "There's a growing focus on creating walkable, mixed-use neighborhoods that reduce car dependency." },
+                { speaker: 1, text: "How are cities adapting to climate change?" },
+                { speaker: 2, text: "Many are implementing green infrastructure like parks and permeable surfaces to manage flooding and reduce heat islands." }
+            ],
+            [
+                { speaker: 1, text: "The gaming industry has grown enormously in recent years. What's driving this expansion?" },
+                { speaker: 2, text: "Gaming has become much more accessible across different platforms, and the pandemic certainly accelerated adoption." },
+                { speaker: 1, text: "What do you think about the rise of esports?" },
+                { speaker: 2, text: "It's fascinating to see competitive gaming achieve mainstream recognition and create new career opportunities." }
+            ],
+            [
+                { speaker: 1, text: "Let's talk about the future of transportation. How will we get around in 20 years?" },
+                { speaker: 2, text: "Electric vehicles will be dominant, and autonomous driving technology will be much more widespread." },
+                { speaker: 1, text: "What about public transit and alternative modes?" },
+                { speaker: 2, text: "I think we'll see more integrated systems where bikes, scooters, and public transit work seamlessly together." }
+            ]
+        ];
+        
+        // Initialize with 2 empty lines
+        function initializePodcastLines() {
+            podcastLinesContainer.innerHTML = '';
+            addPodcastLine(1);
+            addPodcastLine(2);
+        }
+        
+        // Add a new podcast line
+        function addPodcastLine(speakerNum = null) {
+            const lineCount = podcastLinesContainer.querySelectorAll('.podcast-line').length;
+            
+            // If speaker number isn't specified, alternate between 1 and 2
+            if (speakerNum === null) {
+                speakerNum = (lineCount % 2) + 1;
+            }
+            
+            const lineElement = document.createElement('div');
+            lineElement.className = 'podcast-line';
+            
+            lineElement.innerHTML = `
+                <div class="speaker-label speaker-${speakerNum}">Speaker ${speakerNum}</div>
+                <input type="text" class="line-input" placeholder="Enter dialog...">
+                <button type="button" class="remove-line-btn" tabindex="-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+            
+            podcastLinesContainer.appendChild(lineElement);
+            
+            // Add event listener to remove button
+            const removeBtn = lineElement.querySelector('.remove-line-btn');
+            removeBtn.addEventListener('click', function() {
+                // Don't allow removing if there are only 2 lines
+                if (podcastLinesContainer.querySelectorAll('.podcast-line').length > 2) {
+                    lineElement.remove();
+                } else {
+                    openToast("At least 2 lines are required", "warning");
+                }
+            });
+            
+            // Add event listener for keyboard navigation in the input field
+            const inputField = lineElement.querySelector('.line-input');
+            inputField.addEventListener('keydown', function(e) {
+                // Alt+Enter or Ctrl+Enter to add new line
+                if (e.key === 'Enter' && (e.altKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    addPodcastLine();
+                    
+                    // Focus the new line's input field
+                    setTimeout(() => {
+                        const inputs = podcastLinesContainer.querySelectorAll('.line-input');
+                        inputs[inputs.length - 1].focus();
+                    }, 10);
+                }
+            });
+            
+            return lineElement;
+        }
+        
+        // Load a random script
+        function loadRandomScript() {
+            // Clear existing lines
+            podcastLinesContainer.innerHTML = '';
+            
+            // Select a random script
+            const randomScript = randomScripts[Math.floor(Math.random() * randomScripts.length)];
+            
+            // Add each line from the script
+            randomScript.forEach(line => {
+                const lineElement = addPodcastLine(line.speaker);
+                lineElement.querySelector('.line-input').value = line.text;
+            });
+        }
+        
+        // Generate podcast (mock functionality)
+        function generatePodcast() {
+            // Get all lines
+            const lines = [];
+            podcastLinesContainer.querySelectorAll('.podcast-line').forEach(line => {
+                const speaker_id = line.querySelector('.speaker-label').textContent.includes('1') ? 0 : 1;
+                const text = line.querySelector('.line-input').value.trim();
+                
+                if (text) {
+                    lines.push({ speaker_id, text });
+                }
+            });
+            
+            // Validate that we have at least 2 lines with content
+            if (lines.length < 2) {
+                openToast("Please enter at least 2 lines of dialog", "warning");
+                return;
+            }
+            
+            // Reset vote buttons and hide results
+            podcastVoteButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('selected');
+                btn.querySelector('.vote-loader').style.display = 'none';
+            });
+            
+            // Clear model name displays
+            const modelNameDisplays = podcastPlayerContainer.querySelectorAll('.model-name-display');
+            modelNameDisplays.forEach(display => {
+                display.textContent = '';
+            });
+
+            podcastVoteResults.style.display = 'none';
+            podcastNextRoundContainer.style.display = 'none';
+            
+            // Reset the flag for both samples played
+            bothPodcastSamplesPlayed = false;
+            
+            // Show loading animation
+            podcastLoadingContainer.style.display = 'flex';
+            podcastPlayerContainer.style.display = 'none';
+            
+            // Call API to generate podcast
+            fetch('/api/conversational/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ script: lines }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to generate podcast');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                currentPodcastSessionId = data.session_id;
+                
+                // Hide loading
+                podcastLoadingContainer.style.display = 'none';
+                
+                // Show player
+                podcastPlayerContainer.style.display = 'block';
+                
+                // Initialize WavePlayers if not already done
+                if (!podcastWavePlayers.a) {
+                    podcastWavePlayers.a = new WavePlayer(podcastWavePlayerA, {
+                        // Add mobile-friendly options but hide native controls
+                        backend: 'MediaElement',
+                        mediaControls: false // Hide native audio controls
+                    });
+                    podcastWavePlayers.b = new WavePlayer(podcastWavePlayerB, {
+                        // Add mobile-friendly options but hide native controls
+                        backend: 'MediaElement',
+                        mediaControls: false // Hide native audio controls
+                    });
+                    
+                    // Load audio in waveplayers
+                    podcastWavePlayers.a.loadAudio(data.audio_a);
+                    podcastWavePlayers.b.loadAudio(data.audio_b);
+                    
+                    // Force hide loading indicators after 5 seconds as a fallback
+                    setTimeout(() => {
+                        if (podcastWavePlayers.a && podcastWavePlayers.a.hideLoading) {
+                            podcastWavePlayers.a.hideLoading();
+                        }
+                        if (podcastWavePlayers.b && podcastWavePlayers.b.hideLoading) {
+                            podcastWavePlayers.b.hideLoading();
+                        }
+                        console.log('Forced hiding of podcast loading indicators (safety timeout - existing players)');
+                    }, 5000);
+                } else {
+                    // Reset and reload for existing players
+                    try {
+                        podcastWavePlayers.a.wavesurfer.empty();
+                        podcastWavePlayers.b.wavesurfer.empty();
+                        
+                        // Make sure loading indicators are reset
+                        podcastWavePlayers.a.hideLoading();
+                        podcastWavePlayers.b.hideLoading();
+                        
+                        podcastWavePlayers.a.loadAudio(data.audio_a);
+                        podcastWavePlayers.b.loadAudio(data.audio_b);
+                        
+                        // Force hide loading indicators after 5 seconds as a fallback
+                        setTimeout(() => {
+                            if (podcastWavePlayers.a && podcastWavePlayers.a.hideLoading) {
+                                podcastWavePlayers.a.hideLoading();
+                            }
+                            if (podcastWavePlayers.b && podcastWavePlayers.b.hideLoading) {
+                                podcastWavePlayers.b.hideLoading();
+                            }
+                            console.log('Forced hiding of podcast loading indicators (safety timeout - existing players)');
+                        }, 5000);
+                    } catch (err) {
+                        console.error('Error resetting podcast waveplayers:', err);
+                        
+                        // Recreate the players if there was an error
+                        podcastWavePlayers.a = new WavePlayer(podcastWavePlayerA, {
+                            backend: 'MediaElement',
+                            mediaControls: false
+                        });
+                        podcastWavePlayers.b = new WavePlayer(podcastWavePlayerB, {
+                            backend: 'MediaElement',
+                            mediaControls: false
+                        });
+                        
+                        podcastWavePlayers.a.loadAudio(data.audio_a);
+                        podcastWavePlayers.b.loadAudio(data.audio_b);
+
+                        // Force hide loading indicators after 5 seconds as a fallback
+                        setTimeout(() => {
+                            if (podcastWavePlayers.a && podcastWavePlayers.a.hideLoading) {
+                                podcastWavePlayers.a.hideLoading();
+                            }
+                            if (podcastWavePlayers.b && podcastWavePlayers.b.hideLoading) {
+                                podcastWavePlayers.b.hideLoading();
+                            }
+                            console.log('Forced hiding of podcast loading indicators (fallback case)');
+                        }, 5000);
+                    }
+                }
+                
+                // Setup automatic sequential playback
+                podcastWavePlayers.a.wavesurfer.once('ready', function() {
+                    podcastWavePlayers.a.play();
+                    
+                    // When audio A ends, play audio B
+                    podcastWavePlayers.a.wavesurfer.once('finish', function() {
+                        // Wait a short moment before playing B
+                        setTimeout(() => {
+                            podcastWavePlayers.b.play();
+                            
+                            // When audio B ends, enable voting
+                            podcastWavePlayers.b.wavesurfer.once('finish', function() {
+                                bothPodcastSamplesPlayed = true;
+                                podcastVoteButtons.forEach(btn => {
+                                    btn.disabled = false;
+                                });
+                            });
+                        }, 500);
+                    });
+                });
+            })
+            .catch(error => {
+                podcastLoadingContainer.style.display = 'none';
+                
+                // Handle authentication errors specially
+                if (error.message.includes('logged in to generate') || error.message.includes('logged in to vote')) {
+                    openToast("Please log in to use TTS Arena. <a href='{{ url_for('auth.login', next=request.path) }}' style='color: white; text-decoration: underline;'>Login now</a>", "error");
+                } else {
+                    openToast(error.message, "error");
+                }
+                console.error('Error:', error);
+            });
+        }
+        
+        // Handle vote for a podcast model
+        function handlePodcastVote(model) {
+            // Disable both vote buttons
+            podcastVoteButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.dataset.model === model) {
+                    btn.querySelector('.vote-loader').style.display = 'flex';
+                }
+            });
+            
+            // Send vote to server
+            fetch('/api/conversational/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: currentPodcastSessionId,
+                    chosen_model: model
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to submit vote');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Hide loaders
+                podcastVoteButtons.forEach(btn => {
+                    btn.querySelector('.vote-loader').style.display = 'none';
+                    
+                    // Highlight the selected button
+                    if (btn.dataset.model === model) {
+                        btn.classList.add('selected');
+                    }
+                });
+                
+                // Store model names from vote response
+                podcastModelNames.a = data.names.a;
+                podcastModelNames.b = data.names.b;
+                
+                // Show model names after voting
+                const modelNameDisplays = podcastPlayerContainer.querySelectorAll('.model-name-display');
+                modelNameDisplays[0].textContent = data.names.a ? `(${data.names.a})` : '';
+                modelNameDisplays[1].textContent = data.names.b ? `(${data.names.b})` : '';
+                
+                // Show vote results
+                chosenModelNameElement.textContent = data.chosen_model.name;
+                rejectedModelNameElement.textContent = data.rejected_model.name;
+                podcastVoteResults.style.display = 'block';
+                
+                // Show next round button
+                podcastNextRoundContainer.style.display = 'block';
+                
+                // Show success toast
+                openToast("Vote recorded successfully!", "success");
+            })
+            .catch(error => {
+                // Re-enable vote buttons
+                podcastVoteButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.querySelector('.vote-loader').style.display = 'none';
+                });
+                
+                // Handle authentication errors specially
+                if (error.message.includes('logged in to vote')) {
+                    openToast("Please log in to vote. <a href='{{ url_for('auth.login', next=request.path) }}' style='color: white; text-decoration: underline;'>Login now</a>", "error");
+                } else {
+                    openToast(error.message, "error");
+                }
+                console.error('Error:', error);
+            });
+        }
+        
+        // Reset podcast UI to initial state
+        function resetPodcastState() {
+            // Hide players, results, and next round button
+            podcastPlayerContainer.style.display = 'none';
+            podcastVoteResults.style.display = 'none';
+            podcastNextRoundContainer.style.display = 'none';
+            
+            // Reset vote buttons
+            podcastVoteButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('selected');
+                btn.querySelector('.vote-loader').style.display = 'none';
+            });
+            
+            // Clear model name displays
+            const modelNameDisplays = podcastPlayerContainer.querySelectorAll('.model-name-display');
+            modelNameDisplays.forEach(display => {
+                display.textContent = '';
+            });
+            
+            // Stop any playing audio
+            if (podcastWavePlayers.a) podcastWavePlayers.a.stop();
+            if (podcastWavePlayers.b) podcastWavePlayers.b.stop();
+            
+            // Reset session
+            currentPodcastSessionId = null;
+            
+            // Reset the flag for both samples played
+            bothPodcastSamplesPlayed = false;
+        }
+        
+        // Add keyboard shortcut listeners for podcast voting
+        document.addEventListener('keydown', function(e) {
+            // Check if we're in the podcast tab and it's active
+            const podcastTab = document.getElementById('conversational-tab');
+            if (!podcastTab.classList.contains('active')) return;
+            
+            // Only process if input fields are not focused
+            if (document.activeElement.tagName === 'INPUT' || 
+                document.activeElement.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            if (e.key.toLowerCase() === 'a') {
+                if (bothPodcastSamplesPlayed && !podcastVoteButtons[0].disabled) {
+                    handlePodcastVote('a');
+                } else if (podcastPlayerContainer.style.display !== 'none' && !bothPodcastSamplesPlayed) {
+                    openToast("Please listen to both audio samples before voting", "info");
+                }
+            } else if (e.key.toLowerCase() === 'b') {
+                if (bothPodcastSamplesPlayed && !podcastVoteButtons[1].disabled) {
+                    handlePodcastVote('b');
+                } else if (podcastPlayerContainer.style.display !== 'none' && !bothPodcastSamplesPlayed) {
+                    openToast("Please listen to both audio samples before voting", "info");
+                }
+            } else if (e.key.toLowerCase() === 'n') {
+                if (podcastNextRoundContainer.style.display === 'block') {
+                    if (!e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                    }
+                    resetPodcastState();
+                }
+            } else if (e.key === ' ') {
+                // Space to play/pause current audio
+                if (podcastPlayerContainer.style.display !== 'none') {
+                    e.preventDefault();
+                    // If A is playing, toggle A, else if B is playing, toggle B, else play A
+                    if (podcastWavePlayers.a && podcastWavePlayers.a.isPlaying) {
+                        podcastWavePlayers.a.togglePlayPause();
+                    } else if (podcastWavePlayers.b && podcastWavePlayers.b.isPlaying) {
+                        podcastWavePlayers.b.togglePlayPause();
+                    } else if (podcastWavePlayers.a) {
+                        podcastWavePlayers.a.play();
+                    }
+                }
+            }
+        });
+        
+        // Event listeners
+        addLineBtn.addEventListener('click', function() {
+            addPodcastLine();
+        });
+        
+        randomScriptBtn.addEventListener('click', function() {
+            loadRandomScript();
+        });
+        
+        podcastSynthBtn.addEventListener('click', function() {
+            generatePodcast();
+        });
+        
+        // Add event listeners to vote buttons
+        podcastVoteButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (bothPodcastSamplesPlayed) {
+                    const model = this.dataset.model;
+                    handlePodcastVote(model);
+                } else {
+                    openToast("Please listen to both audio samples before voting", "info");
+                }
+            });
+        });
+        
+        // Add event listener for next round button
+        podcastNextRoundBtn.addEventListener('click', resetPodcastState);
+        
+        // Initialize with 2 empty lines
+        initializePodcastLines();
+    });
+</script>
+{% endblock %}

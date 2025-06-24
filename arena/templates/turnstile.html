@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Required - TTS Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <style>
+        :root {
+            --primary-color: #5046e5;
+            --secondary-color: #f0f0f0;
+            --text-color: #333;
+            --light-gray: #f5f5f5;
+            --border-color: #e0e0e0;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--light-gray);
+        }
+
+        .verification-container {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 32px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--primary-color);
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--text-color);
+        }
+
+        p {
+            margin-bottom: 24px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .turnstile-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 12px 24px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: #4038c7;
+        }
+
+        .btn:disabled {
+            background-color: #a8a4e0;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn.loading .btn-text {
+            display: none;
+            font-size: 1rem;
+        }
+
+        .btn.loading .loader {
+            display: inline-block;
+        }
+
+        .status-message {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+            display: none;
+        }
+
+        /* Dark mode styles */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #6c63ff;
+                --secondary-color: #2d2b38;
+                --text-color: #e0e0e0;
+                --light-gray: #1e1e24;
+                --border-color: #3a3a45;
+                --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            }
+            
+            body {
+                background-color: #121218;
+            }
+            
+            .verification-container {
+                background-color: var(--light-gray);
+                border: 1px solid var(--border-color);
+            }
+            
+            p {
+                color: #aaa;
+            }
+
+            .status-message {
+                color: #aaa;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="logo">TTS Arena</div>
+        <h1>Verification Required</h1>
+        <p>Please complete the verification below to access TTS Arena. <b>If you are having issues on Safari, please try again using Chrome.</b> (Apologies for the temporary inconvenience - this is a bug with the captcha on Safari and should be fixed soon.)</p>
+        
+        <div id="turnstile-form">
+            <div class="turnstile-container">
+                <div id="cf-turnstile" class="cf-turnstile"></div>
+            </div>
+            <button type="button" class="btn" id="submit-btn" disabled onclick="submitVerification()">
+                <span class="btn-text">Continue to TTS Arena</span>
+                <span class="loader"></span>
+            </button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Store the token and redirect URL
+        let turnstileToken = '';
+        const redirectUrl = '{{ redirect_url }}';
+        // Make sure the redirect URL uses HTTPS for HuggingFace Spaces
+        const secureRedirectUrl = redirectUrl.replace(/^http:\/\//i, 'https://');
+        const verifyEndpoint = '{{ url_for("verify_turnstile") }}';
+        const statusMessage = document.getElementById('status-message');
+        const submitButton = document.getElementById('submit-btn');
+
+        // Function to enable the button when verification is successful
+        function onTurnstileSuccess(token) {
+            turnstileToken = token;
+            submitButton.disabled = false;
+            console.log("Turnstile verification successful");
+        }
+
+        // Function to handle verification errors
+        function onTurnstileError(error) {
+            console.error("Turnstile error:", error);
+            statusMessage.textContent = "Verification error. Please try again.";
+            statusMessage.style.display = "block";
+        }
+
+        // Function to submit the verification via AJAX to handle iframe issues
+        function submitVerification() {
+            if (!turnstileToken) {
+                statusMessage.textContent = "Please complete the verification first.";
+                statusMessage.style.display = "block";
+                return;
+            }
+
+            // Show loading state
+            submitButton.classList.add('loading');
+            submitButton.disabled = true;
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('cf-turnstile-response', turnstileToken);
+            formData.append('redirect_url', secureRedirectUrl);
+            
+            // Send verification request
+            fetch(verifyEndpoint, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin', // Important for cookies
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // Handle redirect from the response
+                    window.location.href = response.url;
+                } else {
+                    return response.json().then(data => {
+                        if (data.success) {
+                            // If we got a JSON success response, redirect
+                            window.location.href = secureRedirectUrl;
+                        } else {
+                            throw new Error("Verification failed");
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Verification error:", error);
+                statusMessage.textContent = "Verification failed. Please try again.";
+                statusMessage.style.display = "block";
+                submitButton.classList.remove('loading');
+                submitButton.disabled = false;
+                
+                // Reset Turnstile if something goes wrong
+                if (typeof turnstile !== 'undefined') {
+                    turnstile.reset('#cf-turnstile');
+                }
+            });
+        }
+
+        // Initialize Turnstile when the page is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for Turnstile script readiness
+            function waitForTurnstile() {
+                if (typeof turnstile !== 'undefined') {
+                    // Render the Turnstile widget
+                    turnstile.render('#cf-turnstile', {
+                        sitekey: '{{ turnstile_site_key }}',
+                        callback: onTurnstileSuccess,
+                        'error-callback': onTurnstileError
+                    });
+                } else {
+                    // If not ready yet, wait and try again
+                    setTimeout(waitForTurnstile, 100);
+                }
+            }
+            
+            waitForTurnstile();
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TTS Arena{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+    <style>
+        :root {
+            --primary-color: #5046e5;
+            --secondary-color: #f0f0f0;
+            --text-color: #333;
+            --light-gray: #f5f5f5;
+            --border-color: #e0e0e0;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+            --success-color: #10b981;
+            --info-color: #3b82f6;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        a {
+            color: var(--primary-color);
+        }
+
+        .sidebar {
+            width: 240px;
+            background-color: var(--light-gray);
+            padding: 24px 16px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            z-index: 1000;
+            transition: transform 0.3s ease-in-out;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            color: var(--primary-color);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background-color: rgba(80, 70, 229, 0.1);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .nav-item:hover:not(.active) {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item svg {
+            margin-right: 12px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            width: 100%;
+            margin: 0 auto;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        .main-content-inner {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            position: relative;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .input-container {
+            display: flex;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-family: 'Inter', sans-serif;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .text-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 12px 24px;
+            margin-left: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #4038c7;
+        }
+
+        .icon-btn {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: var(--light-gray);
+        }
+
+        .players-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .players-row {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .player {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .player-label {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .vote-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .vote-btn:hover {
+            background-color: var(--light-gray);
+            border-color: #ccc;
+        }
+
+        .vote-btn.selected {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .shortcut-key {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .vote-btn.selected .shortcut-key {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-color: transparent;
+        }
+
+        .user-auth {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            margin: 0 16px;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .user-dropdown.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--light-gray);
+        }
+
+        .dropdown-item svg {
+            margin-right: 12px;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 4px 0;
+        }
+
+        .user-auth-arrow {
+            transition: transform 0.2s;
+        }
+
+        .user-auth.active .user-auth-arrow {
+            transform: rotate(180deg);
+        }
+
+        .login-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        .login-link:hover {
+            background-color: var(--light-gray);
+        }
+
+        .login-link img {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+        }
+
+        .discord-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        .discord-link:hover {
+            background-color: var(--light-gray);
+            color: #5865F2;
+        }
+
+        .discord-link svg {
+            margin-right: 12px;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mobile-header {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .hamburger-menu {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .current-page {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .backdrop.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .close-sidebar {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* Toast styles */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 350px;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            animation: slideIn 0.3s ease-out forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast.slide-out {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        .toast-icon {
+            margin-right: 10px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast-content {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            margin-left: 10px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            width: 100%;
+            transform-origin: left;
+        }
+
+        .toast.info {
+            border-left-color: var(--info-color);
+        }
+
+        .toast.info .toast-icon {
+            color: var(--info-color);
+        }
+
+        .toast.info .toast-progress {
+            background-color: var(--info-color);
+        }
+
+        .toast.success .toast-icon {
+            color: var(--success-color);
+        }
+
+        .toast.success .toast-progress {
+            background-color: var(--success-color);
+        }
+
+        .toast.warning .toast-icon {
+            color: var(--warning-color);
+        }
+
+        .toast.warning .toast-progress {
+            background-color: var(--warning-color);
+        }
+
+        .toast.error .toast-icon {
+            color: var(--error-color);
+        }
+
+        .toast.error .toast-progress {
+            background-color: var(--error-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shrink {
+            from {
+                transform: scaleX(1);
+            }
+            to {
+                transform: scaleX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .mobile-header {
+                display: flex;
+                flex-shrink: 0;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                border-right: 1px solid var(--border-color);
+                padding: 24px 16px;
+                height: 100vh;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .close-sidebar {
+                display: block;
+            }
+
+            .logo {
+                display: block;
+            }
+
+            .players-container {
+                flex-direction: column;
+            }
+
+            .main-content {
+                height: calc(100vh - 57px);
+                overflow-y: auto;
+            }
+
+            .toast-container {
+                bottom: auto;
+                top: 16px;
+                right: 16px;
+                left: 16px;
+                max-width: none;
+            }
+            
+            @keyframes slideIn {
+                from {
+                    transform: translateY(-100%);
+                    opacity: 0;
+                }
+            
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            
+                to {
+                    transform: translateY(-100%);
+                    opacity: 0;
+                }
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-gray);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(120, 120, 120, 0.5);
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 100, 100, 0.7);
+        }
+
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(120, 120, 120, 0.5) var(--light-gray);
+        }
+
+        /* For Edge and other browsers */
+        ::-webkit-scrollbar-corner {
+            background: var(--light-gray);
+        }
+
+        /* Ensure smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Dark mode styles */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #6c63ff;
+                --secondary-color: #2d2b38;
+                --text-color: #e0e0e0;
+                --light-gray: #1e1e24;
+                --border-color: #3a3a45;
+                --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                --success-color: #10b981;
+                --info-color: #60a5fa;
+                --warning-color: #f59e0b;
+                --error-color: #ef4444;
+            }
+
+            body {
+                background-color: #121218;
+                color: var(--text-color);
+            }
+
+            .sidebar {
+                background-color: var(--light-gray);
+                border-right-color: var(--border-color);
+            }
+
+            .nav-item.active {
+                background-color: rgba(108, 99, 255, 0.2);
+            }
+
+            .nav-item:hover:not(.active) {
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+
+            .text-input,
+            .select-input,
+            .textarea {
+                background-color: var(--light-gray);
+                color: var(--text-color);
+                border-color: var(--border-color);
+            }
+
+            .card {
+                background-color: var(--light-gray);
+                border-color: var(--border-color);
+            }
+
+            .tab.active::after {
+                background-color: var(--primary-color);
+            }
+
+            /* Fix vote buttons in dark mode */
+            .vote-btn {
+                background-color: var(--light-gray);
+                color: var(--text-color);
+                border-color: var(--border-color);
+                border-radius: var(--radius);
+            }
+
+            .vote-btn:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-color: var(--border-color);
+            }
+
+            .vote-btn.selected {
+                background-color: var(--primary-color);
+                color: white;
+                border-color: var(--primary-color);
+            }
+
+            .shortcut-key {
+                background-color: rgba(255, 255, 255, 0.1);
+                color: var(--text-color);
+                border-color: var(--border-color);
+            }
+
+            .vote-btn.selected .shortcut-key {
+                background-color: rgba(255, 255, 255, 0.2);
+                color: white;
+                border-color: transparent;
+            }
+
+            /* Fix loading state in dark mode */
+            .vote-btn:disabled,
+            .vote-btn.loading {
+                background-color: var(--light-gray);
+                border-radius: var(--radius);
+            }
+
+            .vote-loader {
+                background-color: var(--light-gray);
+                border-radius: var(--radius);
+            }
+
+            .vote-spinner {
+                border-color: rgba(108, 99, 255, 0.3);
+                border-top-color: var(--primary-color);
+            }
+
+            .toast {
+                background-color: var(--light-gray);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            }
+
+            .toast-close:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            ::-webkit-scrollbar-track {
+                background: var(--secondary-color);
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: rgba(180, 180, 180, 0.5);
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(200, 200, 200, 0.7);
+            }
+
+            * {
+                scrollbar-color: rgba(180, 180, 180, 0.5) var(--secondary-color);
+            }
+
+            ::-webkit-scrollbar-corner {
+                background: var(--secondary-color);
+            }
+
+            /* Dark mode loading overlay */
+            .loading-overlay {
+                background-color: rgba(18, 18, 24, 0.8);
+            }
+
+            /* Dark mode spinner */
+            .loader-spinner {
+                border-color: rgba(108, 99, 255, 0.2);
+                border-top-color: var(--primary-color);
+            }
+
+            /* Dark mode user dropdown */
+            .user-dropdown {
+                background-color: var(--light-gray);
+                border-color: var(--border-color);
+            }
+
+            .dropdown-item {
+                color: var(--text-color);
+            }
+
+            .dropdown-item:hover {
+                background-color: rgba(108, 99, 255, 0.1);
+            }
+
+            .dropdown-divider {
+                background-color: var(--border-color);
+            }
+
+            .user-avatar {
+                background-color: var(--primary-color);
+            }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(80, 70, 229, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Login tip overlay */
+        .login-tip-overlay {
+            position: absolute;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px;
+            z-index: 1000;
+            width: 280px;
+            display: none;
+        }
+
+        .login-tip-overlay.show {
+            display: block;
+        }
+
+        .login-tip-content {
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .login-tip-actions {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .login-tip-close {
+            font-size: 13px;
+            color: var(--text-color);
+            opacity: 0.7;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .login-now-btn {
+            font-size: 13px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .login-tip-overlay[data-popper-placement^='top'] .login-tip-caret {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .login-tip-overlay[data-popper-placement^='top'] .login-tip-caret:after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            top: -6px;
+            left: 2px;
+            transform: rotate(45deg);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .login-tip-overlay {
+                background-color: var(--light-gray);
+                border-color: var(--border-color);
+            }
+            
+            .login-tip-overlay[data-popper-placement^='top'] .login-tip-caret:after {
+                background: var(--light-gray);
+                border-color: var(--border-color);
+            }
+            
+            .login-tip-close {
+                color: var(--text-color);
+            }
+        }
+
+        /* Mobile login banner */
+        .login-banner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            max-width: 320px;
+            background-color: white;
+            color: var(--text-color);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            display: none;
+            z-index: 9998;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .login-banner-content {
+            margin-bottom: 16px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .login-banner-actions {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .login-banner-close {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .login-banner-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            flex: 1;
+            text-align: center;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .login-banner {
+                background-color: var(--light-gray);
+                border-color: var(--border-color);
+            }
+            
+            .login-banner-close {
+                border-color: var(--border-color);
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <div class="mobile-header">
+        <div class="hamburger-menu" onclick="toggleSidebar()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </div>
+        <div class="current-page">{% block current_page %}Arena{% endblock %}</div>
+    </div>
+
+    <div class="backdrop" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="close-sidebar" onclick="toggleSidebar()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </div>
+        <div class="logo">TTS Arena</div>
+        <nav>
+            <a href="{{ url_for('arena') }}" class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dices"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg>
+                Arena
+            </a>
+            <a href="{{ url_for('leaderboard') }}" class="nav-item {% if request.path == '/leaderboard' %}active{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                Leaderboard
+            </a>
+            <a href="{{ url_for('about') }}" class="nav-item {% if request.path == '/about' %}active{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                About
+            </a>
+            
+            <!-- Admin Panel Link - Only visible to admin users -->
+            {% if g.is_admin %}
+            <a href="{{ url_for('admin.index') }}" class="nav-item {% if '/admin' in request.path %}active{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+                Admin Panel
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="https://discord.gg/HB8fMR6GTr" target="_blank" rel="noopener noreferrer" class="discord-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 127.14 96.36" fill="currentColor">
+                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+                </svg>
+                Join our Discord
+            </a>
+
+            {% if current_user.is_authenticated %}
+            <div class="user-auth" onclick="toggleUserDropdown(event)">
+                <div class="user-name">{{ current_user.username }}</div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="user-auth-arrow">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+
+                <div class="user-dropdown">
+                    <a href="{{ url_for('auth.logout') }}" class="dropdown-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Logout
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <a href="{{ url_for('auth.login', next=request.path) }}" class="login-link">
+                <img src="{{ url_for('static', filename='huggingface.svg') }}" alt="Hugging Face">
+                Login
+            </a>
+            <!-- Login tip overlay -->
+            <div id="login-tip-overlay" class="login-tip-overlay">
+                <div class="login-tip-content">
+                    Log in to track your votes, see personalized leaderboards, and more!
+                </div>
+                <div class="login-tip-actions">
+                    <button class="login-tip-close" onclick="dismissLoginTip()">Don't show again</button>
+                    <a href="{{ url_for('auth.login', next=request.path) }}" class="login-now-btn">Login now</a>
+                </div>
+                <div class="login-tip-caret"></div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    openToast('{{ message }}', '{{ category }}');
+                });
+            </script>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="main-content-inner">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    {% if not current_user.is_authenticated %}
+    <!-- Mobile login banner -->
+    <div id="login-banner" class="login-banner">
+        <div class="login-banner-content">
+            Log in to track your votes and see personalized leaderboards!
+        </div>
+        <div class="login-banner-actions">
+            <button class="login-banner-close" onclick="dismissLoginTip()">No thanks</button>
+            <a href="{{ url_for('auth.login', next=request.path) }}" class="login-banner-btn">Login</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% block extra_scripts %}{% endblock %}
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const backdrop = document.querySelector('.backdrop');
+            sidebar.classList.toggle('active');
+            backdrop.classList.toggle('active');
+        }
+
+        function toggleUserDropdown(event) {
+            event.stopPropagation();
+            const userAuth = document.querySelector('.user-auth');
+            const userDropdown = document.querySelector('.user-dropdown');
+            userAuth.classList.toggle('active');
+            userDropdown.classList.toggle('active');
+        }
+
+        // Function to check if the login tip has been dismissed
+        function isLoginTipDismissed() {
+            try {
+                return localStorage.getItem('login_tip_dismissed') === 'true';
+            } catch (error) {
+                // Fallback if localStorage is blocked
+                console.warn('localStorage access failed:', error);
+                return false;
+            }
+        }
+
+        // Function to set localStorage when login tip is dismissed
+        function dismissLoginTip() {
+            try {
+                // Store the preference in localStorage
+                localStorage.setItem('login_tip_dismissed', 'true');
+                
+                // Hide all login notifications
+                const loginTip = document.getElementById('login-tip-overlay');
+                const loginBanner = document.getElementById('login-banner');
+                const backdrop = document.querySelector('.login-backdrop');
+                
+                if (loginTip) {
+                    loginTip.classList.remove('show');
+                }
+                
+                if (loginBanner) {
+                    loginBanner.style.display = 'none';
+                }
+                
+                if (backdrop) {
+                    backdrop.style.display = 'none';
+                }
+            } catch (error) {
+                console.warn('localStorage write failed:', error);
+                // Still hide the tips even if localStorage fails
+                const loginTip = document.getElementById('login-tip-overlay');
+                const loginBanner = document.getElementById('login-banner');
+                const backdrop = document.querySelector('.login-backdrop');
+                
+                if (loginTip) {
+                    loginTip.classList.remove('show');
+                }
+                
+                if (loginBanner) {
+                    loginBanner.style.display = 'none';
+                }
+                
+                if (backdrop) {
+                    backdrop.style.display = 'none';
+                }
+            }
+        }
+
+        // Loading overlay functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            // Show login tip if user is not logged in and hasn't dismissed it
+            const loginTipOverlay = document.getElementById('login-tip-overlay');
+            const loginBanner = document.getElementById('login-banner');
+            const loginLink = document.querySelector('.login-link');
+            
+            if (loginLink && !isLoginTipDismissed()) {
+                // Check screen width to determine which login notification to show
+                if (window.innerWidth <= 768) {
+                    // Create and add a backdrop for the login banner
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'login-backdrop';
+                    backdrop.style.position = 'fixed';
+                    backdrop.style.top = '0';
+                    backdrop.style.left = '0';
+                    backdrop.style.width = '100%';
+                    backdrop.style.height = '100%';
+                    backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                    backdrop.style.zIndex = '9997';
+                    backdrop.style.display = 'none';
+                    document.body.appendChild(backdrop);
+                    
+                    // Show mobile banner with backdrop
+                    if (loginBanner) {
+                        loginBanner.style.display = 'block';
+                        backdrop.style.display = 'block';
+                        
+                        // Add event listener to close banner when clicking backdrop
+                        backdrop.addEventListener('click', function() {
+                            dismissLoginTip();
+                        });
+                    }
+                } else {
+                    // Show desktop popover
+                    if (loginTipOverlay) {
+                        // Position the overlay with Popper.js
+                        const popperInstance = Popper.createPopper(loginLink, loginTipOverlay, {
+                            placement: 'top',
+                            modifiers: [
+                                {
+                                    name: 'offset',
+                                    options: {
+                                        offset: [0, 10],
+                                    },
+                                },
+                            ],
+                        });
+                        
+                        loginTipOverlay.classList.add('show');
+                        popperInstance.update();
+                    }
+                }
+            }
+            
+            // Handle resize events to switch between banner and popover
+            window.addEventListener('resize', function() {
+                if (isLoginTipDismissed()) return;
+                
+                const backdrop = document.querySelector('.login-backdrop');
+                
+                if (window.innerWidth <= 768) {
+                    // Switch to mobile banner
+                    if (loginTipOverlay) {
+                        loginTipOverlay.classList.remove('show');
+                    }
+                    if (loginBanner && backdrop) {
+                        loginBanner.style.display = 'block';
+                        backdrop.style.display = 'block';
+                    }
+                } else {
+                    // Switch to desktop popover
+                    if (loginBanner && backdrop) {
+                        loginBanner.style.display = 'none';
+                        backdrop.style.display = 'none';
+                    }
+                    if (loginTipOverlay && loginLink) {
+                        const popperInstance = Popper.createPopper(loginLink, loginTipOverlay, {
+                            placement: 'top',
+                            modifiers: [
+                                {
+                                    name: 'offset',
+                                    options: {
+                                        offset: [0, 10],
+                                    },
+                                },
+                            ],
+                        });
+                        
+                        loginTipOverlay.classList.add('show');
+                        popperInstance.update();
+                    }
+                }
+            });
+            
+            // Hide the loading overlay when page has loaded
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.remove('active');
+
+            // Override fetch to handle Turnstile verification errors
+            const originalFetch = window.fetch;
+            window.fetch = async function (url, options) {
+                try {
+                    const response = await originalFetch(url, options);
+
+                    // If we get a 403 error with a specific error message, handle verification
+                    if (response.status === 403) {
+                        const data = await response.clone().json();
+                        if (data && (data.error === "Turnstile verification required" || data.error === "Turnstile verification expired")) {
+                            // Redirect to Turnstile verification page with the current URL as the redirect target
+                            window.location.href = "/turnstile?redirect_url=" + encodeURIComponent(window.location.href);
+                            return new Response(JSON.stringify({ redirecting: true }), {
+                                status: 200,
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                        }
+                    }
+
+                    return response;
+                } catch (error) {
+                    return Promise.reject(error);
+                }
+            };
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (event) {
+            const userDropdown = document.querySelector('.user-dropdown');
+            const userAuth = document.querySelector('.user-auth');
+            if (userDropdown && userAuth && userDropdown.classList.contains('active') && !userAuth.contains(event.target)) {
+                userAuth.classList.remove('active');
+                userDropdown.classList.remove('active');
+            }
+        });
+
+        // Toast functionality
+        function openToast(message, type = 'info', duration = 5000) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            // Generate icon based on type
+            let iconSvg = '';
+            if (type === 'info') {
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+            } else if (type === 'success') {
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+            } else if (type === 'warning') {
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17"/></svg>';
+            } else if (type === 'error') {
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+            }
+
+            toast.innerHTML = `
+                <div class="toast-icon">${iconSvg}</div>
+                <div class="toast-content">${message}</div>
+                <div class="toast-close" onclick="closeToast(this.parentNode)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </div>
+                <div class="toast-progress"></div>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Animate progress bar
+            const progressBar = toast.querySelector('.toast-progress');
+            progressBar.style.animation = `shrink ${duration / 1000}s linear forwards`;
+            progressBar.style.transformOrigin = 'left';
+            progressBar.style.transform = 'scaleX(1)';
+
+            // Auto-remove toast after duration
+            const timeoutId = setTimeout(() => {
+                closeToast(toast);
+            }, duration);
+
+            // Store timeout ID on the toast element
+            toast.dataset.timeoutId = timeoutId;
+
+            return toast;
+        }
+
+        function closeToast(toast) {
+            // Clear the timeout to prevent duplicate removal attempts
+            if (toast.dataset.timeoutId) {
+                clearTimeout(parseInt(toast.dataset.timeoutId));
+            }
+
+            // Add slide-out animation
+            toast.classList.add('slide-out');
+
+            // Remove toast after animation completes
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }
+    </script>
+</body>
+
+</html>
