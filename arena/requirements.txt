@@ -3,7 +3,6 @@ flask-login
 flask-sqlalchemy
 python-dotenv
 requests
-authlib
 werkzeug
 flask-limiter
 apscheduler
@@ -11,4 +10,4 @@ flask-migrate
 gunicorn
 waitress
 fal-client
-git+https://github.com/playht/pyht
+# git+https://github.com/playht/pyht
