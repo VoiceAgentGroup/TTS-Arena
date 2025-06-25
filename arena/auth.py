@@ -19,13 +19,22 @@ def admin_required(f):
     """Decorator to require admin access for a route"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash("Authentication is currently disabled", "error")
-            return redirect(url_for("arena"))
+        # Simple environment variable check - no session redirect loops
+        admin_access = os.getenv("ADMIN_ACCESS_ENABLED", "false").lower() == "true"
         
-        if not is_admin(current_user):
-            flash("You do not have permission to access this page", "error")
-            return redirect(url_for("arena"))
+        if not admin_access:
+            # Return a simple error page instead of redirect
+            return """
+            <html>
+            <head><title>Admin Access Disabled</title></head>
+            <body style="font-family: Arial, sans-serif; margin: 50px; text-align: center;">
+                <h2>Admin Access Disabled</h2>
+                <p>Set environment variable: <code>ADMIN_ACCESS_ENABLED=true</code></p>
+                <p>Then restart the application.</p>
+                <a href="/" style="color: #007cba;">← Back to TTS Arena</a>
+            </body>
+            </html>
+            """, 403
             
         return f(*args, **kwargs)
     return decorated_function
