@@ -45,7 +45,7 @@ from flask import (
 )
 from flask_login import LoginManager, current_user
 from models import *
-from auth import auth, init_oauth, is_admin
+from auth import auth, is_admin
 from admin import admin
 from security import is_vote_allowed, check_user_security_score, detect_coordinated_voting
 import os
@@ -115,10 +115,7 @@ migrate = Migrate(app, db)
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "auth.login"
-
-# Initialize OAuth
-init_oauth(app)
+# Authentication is currently disabled
 
 # Configure rate limits
 limiter = Limiter(
@@ -524,9 +521,7 @@ def generate_tts():
     if app.config["TURNSTILE_ENABLED"] and not session.get("turnstile_verified"):
         return jsonify({"error": "Turnstile verification required"}), 403
 
-    # Require user to be logged in to generate audio
-    if not current_user.is_authenticated:
-        return jsonify({"error": "You must be logged in to generate audio"}), 401
+    # Authentication has been disabled - anonymous access allowed
 
     data = request.json
     text = data.get("text", "").strip() # Ensure text is stripped
@@ -703,17 +698,7 @@ def submit_vote():
     if app.config["TURNSTILE_ENABLED"] and not session.get("turnstile_verified"):
         return jsonify({"error": "Turnstile verification required"}), 403
 
-    # Require user to be logged in to vote
-    if not current_user.is_authenticated:
-        return jsonify({"error": "You must be logged in to vote"}), 401
-
-    # Security checks for vote manipulation prevention
-    client_ip = get_client_ip()
-    vote_allowed, security_reason, security_score = is_vote_allowed(current_user.id, client_ip)
-    
-    if not vote_allowed:
-        app.logger.warning(f"Vote blocked for user {current_user.username} (ID: {current_user.id}): {security_reason} (Score: {security_score})")
-        return jsonify({"error": f"Vote not allowed: {security_reason}"}), 403
+    # Authentication has been disabled - anonymous access allowed
 
     data = request.json
     session_id = data.get("session_id")
@@ -757,22 +742,23 @@ def submit_vote():
     user_agent = request.headers.get('User-Agent')
     cache_hit = session_data.get("cache_hit", False)
 
-    # Record vote in database with analytics data
-    vote, error = record_vote(
-        current_user.id, 
-        session_data["text"], 
-        chosen_id, 
-        rejected_id, 
+    # Record vote with anonymous user (no authentication)
+    user_id = None  # Anonymous voting
+    vote_id = record_vote(
+        user_id,
+        session_data["text"],
+        chosen_id,
+        rejected_id,
         ModelType.TTS,
         session_duration=session_duration,
         ip_address=client_ip,
         user_agent=user_agent,
-        generation_date=session_data["created_at"],
-        cache_hit=cache_hit
+        generation_date=session_data.get("created_at"),
+        cache_hit=session_data.get("cache_hit", False),
     )
 
-    if error:
-        return jsonify({"error": error}), 500
+    if vote_id is None:
+        return jsonify({"error": "Vote recording failed"}), 500
 
     # --- Save preference data ---
     try:
@@ -795,7 +781,7 @@ def submit_vote():
             "rejected_model_id": rejected_model_obj.id if rejected_model_obj else "Unknown",
             "session_id": session_id,
             "timestamp": datetime.utcnow().isoformat(),
-            "username": current_user.username,
+            "username": "Anonymous",
             "model_type": "TTS"
         }
         with open(os.path.join(vote_dir, "metadata.json"), "w") as f:
@@ -864,9 +850,7 @@ def generate_podcast():
     if app.config["TURNSTILE_ENABLED"] and not session.get("turnstile_verified"):
         return jsonify({"error": "Turnstile verification required"}), 403
 
-    # Require user to be logged in to generate audio
-    if not current_user.is_authenticated:
-        return jsonify({"error": "You must be logged in to generate audio"}), 401
+    # Authentication has been disabled - anonymous access allowed
 
     data = request.json
     script = data.get("script")
@@ -1001,17 +985,7 @@ def submit_podcast_vote():
     if app.config["TURNSTILE_ENABLED"] and not session.get("turnstile_verified"):
         return jsonify({"error": "Turnstile verification required"}), 403
 
-    # Require user to be logged in to vote
-    if not current_user.is_authenticated:
-        return jsonify({"error": "You must be logged in to vote"}), 401
-
-    # Security checks for vote manipulation prevention
-    client_ip = get_client_ip()
-    vote_allowed, security_reason, security_score = is_vote_allowed(current_user.id, client_ip)
-    
-    if not vote_allowed:
-        app.logger.warning(f"Conversational vote blocked for user {current_user.username} (ID: {current_user.id}): {security_reason} (Score: {security_score})")
-        return jsonify({"error": f"Vote not allowed: {security_reason}"}), 403
+    # Authentication has been disabled - anonymous access allowed
 
     data = request.json
     session_id = data.get("session_id")
@@ -1055,24 +1029,25 @@ def submit_podcast_vote():
     user_agent = request.headers.get('User-Agent')
     cache_hit = session_data.get("cache_hit", False)
 
-    # Record vote in database with analytics data
-    vote, error = record_vote(
-        current_user.id, 
-        session_data["text"], 
-        chosen_id, 
-        rejected_id, 
+    # Record vote with anonymous user (no authentication)
+    user_id = None  # Anonymous voting
+    vote_id = record_vote(
+        user_id,
+        session_data["text"],
+        chosen_id,
+        rejected_id,
         ModelType.CONVERSATIONAL,
         session_duration=session_duration,
         ip_address=client_ip,
         user_agent=user_agent,
-        generation_date=session_data["created_at"],
-        cache_hit=cache_hit
+        generation_date=session_data.get("created_at"),
+        cache_hit=session_data.get("cache_hit", False),
     )
 
-    if error:
-        return jsonify({"error": error}), 500
+    if vote_id is None:
+        return jsonify({"error": "Vote recording failed"}), 500
 
-    # --- Save preference data ---\
+    # --- Save preference data ---
     try:
         vote_uuid = str(uuid.uuid4())
         vote_dir = os.path.join("./votes", vote_uuid)
@@ -1093,7 +1068,7 @@ def submit_podcast_vote():
             "rejected_model_id": rejected_model_obj.id if rejected_model_obj else "Unknown",
             "session_id": session_id,
             "timestamp": datetime.utcnow().isoformat(),
-            "username": current_user.username,
+            "username": "Anonymous",
             "model_type": "CONVERSATIONAL"
         }
         with open(os.path.join(vote_dir, "metadata.json"), "w") as f:
@@ -1383,19 +1358,8 @@ def init_db():
 
 @app.route("/api/toggle-leaderboard-visibility", methods=["POST"])
 def toggle_leaderboard_visibility():
-    """Toggle whether the current user appears in the top voters leaderboard"""
-    if not current_user.is_authenticated:
-        return jsonify({"error": "You must be logged in to change this setting"}), 401
-    
-    new_status = toggle_user_leaderboard_visibility(current_user.id)
-    if new_status is None:
-        return jsonify({"error": "User not found"}), 404
-        
-    return jsonify({
-        "success": True, 
-        "visible": new_status,
-        "message": "You are now visible in the voters leaderboard" if new_status else "You are now hidden from the voters leaderboard"
-    })
+    # Authentication has been disabled
+    return jsonify({"error": "Authentication disabled"}), 403
 
 
 @app.route("/api/tts/cached-sentences")
