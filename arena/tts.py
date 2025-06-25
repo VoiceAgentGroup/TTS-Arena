@@ -23,68 +23,69 @@ def get_zerogpu_token():
 
 
 model_mapping = {
-    "eleven-multilingual-v2": {
-        "provider": "elevenlabs",
-        "model": "eleven_multilingual_v2",
-    },
-    "eleven-turbo-v2.5": {
-        "provider": "elevenlabs",
-        "model": "eleven_turbo_v2_5",
-    },
-    "eleven-flash-v2.5": {
-        "provider": "elevenlabs",
-        "model": "eleven_flash_v2_5",
-    },
-    "cartesia-sonic-2": {
-        "provider": "cartesia",
-        "model": "sonic-2",
-    },
-    "spark-tts": {
-        "provider": "spark",
-        "model": "spark-tts",
-    },
-    "playht-2.0": {
-        "provider": "playht",
-        "model": "PlayHT2.0",
-    },
-    "styletts2": {
-        "provider": "styletts",
-        "model": "styletts2",
-    },
-    "kokoro-v1": {
-        "provider": "kokoro",
-        "model": "kokoro_v1",
-    },
-    "cosyvoice-2.0": {
-        "provider": "cosyvoice",
-        "model": "cosyvoice_2_0",
-    },
-    "papla-p1": {
-        "provider": "papla",
-        "model": "papla_p1",
-    },
-    "hume-octave": {
-        "provider": "hume",
-        "model": "octave",
-    },
-    "megatts3": {
-        "provider": "megatts3",
-        "model": "megatts3",
-    },
+    # "eleven-multilingual-v2": {
+    #     "provider": "elevenlabs",
+    #     "model": "eleven_multilingual_v2",
+    # },
+    # "eleven-turbo-v2.5": {
+    #     "provider": "elevenlabs",
+    #     "model": "eleven_turbo_v2_5",
+    # },
+    # "eleven-flash-v2.5": {
+    #     "provider": "elevenlabs",
+    #     "model": "eleven_flash_v2_5",
+    # },
+    # "cartesia-sonic-2": {
+    #     "provider": "cartesia",
+    #     "model": "sonic-2",
+    # },
+    # "spark-tts": {
+    #     "provider": "spark",
+    #     "model": "spark-tts",
+    # },
+    # "playht-2.0": {
+    #     "provider": "playht",
+    #     "model": "PlayHT2.0",
+    # },
+    # "styletts2": {
+    #     "provider": "styletts",
+    #     "model": "styletts2",
+    # },
+    # "kokoro-v1": {
+    #     "provider": "kokoro",
+    #     "model": "kokoro_v1",
+    # },
+    # "cosyvoice-2.0": {
+    #     "provider": "cosyvoice",
+    #     "model": "cosyvoice_2_0",
+    # },
+    # "papla-p1": {
+    #     "provider": "papla",
+    #     "model": "papla_p1",
+    # },
+    # "hume-octave": {
+    #     "provider": "hume",
+    #     "model": "octave",
+    # },
+    # "megatts3": {
+    #     "provider": "megatts3",
+    #     "model": "megatts3",
+    # },
     "minimax-02-hd": {
         "provider": "minimax",
         "model": "speech-02-hd",
     },
-    "minimax-02-turbo": {
-        "provider": "minimax",
-        "model": "speech-02-turbo",
+    "seed-tts": {
+        "provider": "seed-tts",
+        "model": "zh_male_M392_conversation_wvae_bigtts",
     },
-    "lanternfish-1": {
-        "provider": "lanternfish",
-        "model": "lanternfish-1",
-    },
+    # "lanternfish-1": {
+    #     "provider": "fish",
+    #     "model": "s1",
+    # },
 }
-url = "https://tts-agi-tts-router-v2.hf.space/tts"
+url = "http://b1a19babde7c47e097a30796348d049c.ai-nm-z1-link.lanyun.net:8090/tts"
+# url = "https://tts-agi-tts-router-v2.hf.space/tts"
 headers = {
     "accept": "application/json",
     "Content-Type": "application/json",
