@@ -5,7 +5,7 @@
 {% block current_page %}Arena{% endblock %}
 
 {% block content %}
-<!-- Authentication has been disabled -->
+<!-- Authentication has been disabled - anonymous access allowed -->
 
 <div class="tabs">
     <div class="tab active" data-tab="tts">TTS</div>
@@ -996,88 +996,7 @@
         }
     }
 
-    /* Login prompt overlay styles */
-    .login-prompt-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .login-prompt-content {
-        background: white;
-        border-radius: 12px;
-        padding: 32px;
-        max-width: 400px;
-        width: 90%;
-        text-align: center;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    }
-
-    .login-prompt-content h3 {
-        margin: 0 0 16px 0;
-        color: var(--text-color);
-        font-size: 24px;
-    }
-
-    .login-prompt-content p {
-        margin: 0 0 24px 0;
-        color: var(--text-secondary);
-        line-height: 1.5;
-    }
-
-    .login-prompt-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-    }
-
-    .login-prompt-close {
-        padding: 12px 24px;
-        background: transparent;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s;
-    }
-
-    .login-prompt-close:hover {
-        background: var(--light-gray);
-    }
-
-    .login-prompt-btn {
-        padding: 12px 24px;
-        background: var(--primary-color);
-        border: none;
-        border-radius: 8px;
-        color: white;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s;
-        display: inline-block;
-    }
-
-    .login-prompt-btn:hover {
-        background: var(--primary-hover);
-        transform: translateY(-1px);
-    }
-
-    /* Dark mode for login prompt */
-    @media (prefers-color-scheme: dark) {
-        .login-prompt-content {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-        }
-    }
+    /* Login prompt styles removed - authentication disabled */
 </style>
 {% endblock %}
 
@@ -1085,39 +1004,7 @@
 <script src="{{ url_for('static', filename='js/waveplayer.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Check authentication status
-        const authStatus = document.getElementById('auth-status');
-        const isAuthenticated = authStatus ? authStatus.dataset.authenticated === 'true' : false;
-        const loginPromptOverlay = document.getElementById('login-prompt-overlay');
-        const loginPromptClose = document.querySelector('.login-prompt-close');
-
-        // Function to show login prompt
-        function showLoginPrompt() {
-            if (loginPromptOverlay) {
-                loginPromptOverlay.style.display = 'flex';
-            }
-        }
-
-        // Function to hide login prompt
-        function hideLoginPrompt() {
-            if (loginPromptOverlay) {
-                loginPromptOverlay.style.display = 'none';
-            }
-        }
-
-        // Add event listener to close button
-        if (loginPromptClose) {
-            loginPromptClose.addEventListener('click', hideLoginPrompt);
-        }
-
-        // Close prompt when clicking outside
-        if (loginPromptOverlay) {
-            loginPromptOverlay.addEventListener('click', function (e) {
-                if (e.target === loginPromptOverlay) {
-                    hideLoginPrompt();
-                }
-            });
-        }
+        // Authentication removed - anonymous access allowed
 
         const synthForm = document.querySelector('.input-container');
         const synthBtn = document.querySelector('.synth-btn');
@@ -1145,7 +1032,7 @@
         let currentSessionId = null;
         let modelNames = { a: '', b: '' };
         let wavePlayers = { a: null, b: null };
-        let cachedSentences = []; // To store sentences available in cache
+        // Cached sentences functionality removed - using fallback sentences only
 
         // Initialize WavePlayers with mobile settings
         wavePlayerContainers.forEach(container => {
@@ -1164,19 +1051,7 @@
     }};
     const fallbackRandomTexts = JSON.parse(fallbackSentencesJson);
 
-    // Fetch cached sentences on load
-    function fetchCachedSentences() {
-        fetch('/api/tts/cached-sentences')
-            .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch cached sentences'))
-            .then(data => {
-                cachedSentences = data;
-                console.log(`Fetched ${cachedSentences.length} cached sentences.`);
-            })
-            .catch(error => {
-                console.error('Error fetching cached sentences:', error);
-                // Keep cachedSentences as empty array, fallback will be used
-            });
-    }
+    // Cached sentences functionality removed - using fallback sentences only
 
     // Check URL hash for direct tab access
     function checkHashAndSetTab() {
@@ -1232,11 +1107,7 @@
             e.preventDefault();
         }
 
-        // Check authentication first
-        if (!isAuthenticated) {
-            showLoginPrompt();
-            return;
-        }
+        // Authentication check removed - anonymous access allowed
 
         const text = textInput.value.trim();
         if (!text) {
@@ -1324,8 +1195,7 @@
                     });
                 });
 
-                // Fetch cached sentences again to update the list
-                fetchCachedSentences();
+                // Cached sentences functionality removed
             })
             .catch(error => {
                 loadingContainer.style.display = 'none';
@@ -1454,20 +1324,12 @@
 
     function handleRandom() {
         let selectedText = '';
-        if (cachedSentences && cachedSentences.length > 0) {
-            // Select a random text from the cache
-            selectedText = cachedSentences[Math.floor(Math.random() * cachedSentences.length)];
-            console.log("Using random sentence from cache.");
+        // Use fallback sentences directly (cached sentences functionality removed)
+        if (fallbackRandomTexts && fallbackRandomTexts.length > 0) {
+            selectedText = fallbackRandomTexts[Math.floor(Math.random() * fallbackRandomTexts.length)];
         } else {
-            // Fallback to the initial list if cache is empty or failed to load
-            console.log("Cache empty or unavailable, using random sentence from fallback list.");
-            if (fallbackRandomTexts && fallbackRandomTexts.length > 0) {
-                selectedText = fallbackRandomTexts[Math.floor(Math.random() * fallbackRandomTexts.length)];
-            } else {
-                // If fallback list is also empty, do nothing. Log an error.
-                console.error("Both cached sentences and fallback sentences are unavailable.");
-                return;
-            }
+            console.error("Fallback sentences are unavailable.");
+            return;
         }
         textInput.value = selectedText;
         textInput.focus();
@@ -1579,7 +1441,7 @@
     nextRoundBtn.addEventListener('click', resetToInitialState);
 
     // Fetch cached sentences when the DOM is ready
-    fetchCachedSentences();
+    // Cached sentences functionality removed - using fallback sentences only
     });
 </script>
 

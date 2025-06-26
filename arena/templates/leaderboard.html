@@ -1332,9 +1332,10 @@
                 const view = this.id.split('-')[1]; // 'public', 'personal', or 'historical'
                 const tabId = this.closest('.tab-content').id.split('-')[0]; // 'tts' or 'conversational'
 
-                if (view === 'personal' && !isLoggedIn) {
-                    // Authentication disabled - redirect to public view
+                if (view === 'personal') {
+                    // Personal view disabled - authentication removed
                     document.getElementById(`${tabId}-public`).checked = true;
+                    alert('Personal leaderboards are disabled in anonymous mode. All votes are anonymous.');
                     return;
                 }
 
