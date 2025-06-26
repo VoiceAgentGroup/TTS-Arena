@@ -1,1 +1,0 @@
-RUNNING_LOCALLY=1 python app.py

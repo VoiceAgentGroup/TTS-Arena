@@ -45,7 +45,7 @@ from flask import (
 )
 from flask_login import LoginManager, current_user
 from models import *
-from auth import auth, is_admin
+# Authentication removed - anonymous access only
 from admin import admin
 from security import is_vote_allowed, check_user_security_score, detect_coordinated_voting
 import os
@@ -100,15 +100,7 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)  # Set to desired 
 if IS_SPACES:
     app.config["PREFERRED_URL_SCHEME"] = "https"
 
-# Cloudflare Turnstile settings
-app.config["TURNSTILE_ENABLED"] = (
-    os.getenv("TURNSTILE_ENABLED", "False").lower() == "true"
-)
-app.config["TURNSTILE_SITE_KEY"] = os.getenv("TURNSTILE_SITE_KEY", "")
-app.config["TURNSTILE_SECRET_KEY"] = os.getenv("TURNSTILE_SECRET_KEY", "")
-app.config["TURNSTILE_VERIFY_URL"] = (
-    "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-)
+# Turnstile bot protection removed for local development simplicity
 
 migrate = Migrate(app, db)
 
@@ -143,7 +135,7 @@ app.conversational_sessions = {}
 conversational_sessions = app.conversational_sessions
 
 # Register blueprints
-app.register_blueprint(auth, url_prefix="/auth")
+# Auth blueprint removed - authentication disabled
 app.register_blueprint(admin)
 
 
@@ -155,145 +147,20 @@ def load_user(user_id):
 @app.before_request
 def before_request():
     g.user = current_user
-    g.is_admin = is_admin(current_user)
+    g.is_admin = True  # Admin access enabled by default (auth disabled)
 
     # Ensure HTTPS for HuggingFace Spaces environment
     if IS_SPACES and request.headers.get("X-Forwarded-Proto") == "http":
         url = request.url.replace("http://", "https://", 1)
         return redirect(url, code=301)
 
-    # Check if Turnstile verification is required
-    if app.config["TURNSTILE_ENABLED"]:
-        # Exclude verification routes
-        excluded_routes = ["verify_turnstile", "turnstile_page", "static"]
-        if request.endpoint not in excluded_routes:
-            # Check if user is verified
-            if not session.get("turnstile_verified"):
-                # Save original URL for redirect after verification
-                redirect_url = request.url
-                # Force HTTPS in HuggingFace Spaces
-                if IS_SPACES and redirect_url.startswith("http://"):
-                    redirect_url = redirect_url.replace("http://", "https://", 1)
-
-                # If it's an API request, return a JSON response
-                if request.path.startswith("/api/"):
-                    return jsonify({"error": "Turnstile verification required"}), 403
-                # For regular requests, redirect to verification page
-                return redirect(url_for("turnstile_page", redirect_url=redirect_url))
-            else:
-                # Check if verification has expired (default: 24 hours)
-                verification_timeout = (
-                    int(os.getenv("TURNSTILE_TIMEOUT_HOURS", "24")) * 3600
-                )  # Convert hours to seconds
-                verified_at = session.get("turnstile_verified_at", 0)
-                current_time = datetime.utcnow().timestamp()
-
-                if current_time - verified_at > verification_timeout:
-                    # Verification expired, clear status and redirect to verification page
-                    session.pop("turnstile_verified", None)
-                    session.pop("turnstile_verified_at", None)
-
-                    redirect_url = request.url
-                    # Force HTTPS in HuggingFace Spaces
-                    if IS_SPACES and redirect_url.startswith("http://"):
-                        redirect_url = redirect_url.replace("http://", "https://", 1)
-
-                    if request.path.startswith("/api/"):
-                        return jsonify({"error": "Turnstile verification expired"}), 403
-                    return redirect(
-                        url_for("turnstile_page", redirect_url=redirect_url)
-                    )
+    # Turnstile verification removed for local development simplicity
 
 
-@app.route("/turnstile", methods=["GET"])
-def turnstile_page():
-    """Display Cloudflare Turnstile verification page"""
-    redirect_url = request.args.get("redirect_url", url_for("arena", _external=True))
+# Turnstile routes removed for local development simplicity
 
-    # Force HTTPS in HuggingFace Spaces
-    if IS_SPACES and redirect_url.startswith("http://"):
-        redirect_url = redirect_url.replace("http://", "https://", 1)
-
-    return render_template(
-        "turnstile.html",
-        turnstile_site_key=app.config["TURNSTILE_SITE_KEY"],
-        redirect_url=redirect_url,
-    )
-
-
-@app.route("/verify-turnstile", methods=["POST"])
-def verify_turnstile():
-    """Verify Cloudflare Turnstile token"""
-    token = request.form.get("cf-turnstile-response")
-    redirect_url = request.form.get("redirect_url", url_for("arena", _external=True))
-
-    # Force HTTPS in HuggingFace Spaces
-    if IS_SPACES and redirect_url.startswith("http://"):
-        redirect_url = redirect_url.replace("http://", "https://", 1)
-
-    if not token:
-        # If AJAX request, return JSON error
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return (
-                jsonify({"success": False, "error": "Missing verification token"}),
-                400,
-            )
-        # Otherwise redirect back to turnstile page
-        return redirect(url_for("turnstile_page", redirect_url=redirect_url))
-
-    # Verify token with Cloudflare
-    data = {
-        "secret": app.config["TURNSTILE_SECRET_KEY"],
-        "response": token,
-        "remoteip": request.remote_addr,
-    }
-
-    try:
-        response = requests.post(app.config["TURNSTILE_VERIFY_URL"], data=data)
-        result = response.json()
-
-        if result.get("success"):
-            # Set verification status in session
-            session["turnstile_verified"] = True
-            session["turnstile_verified_at"] = datetime.utcnow().timestamp()
-
-            # Determine response type based on request
-            is_xhr = request.headers.get("X-Requested-With") == "XMLHttpRequest"
-            accepts_json = "application/json" in request.headers.get("Accept", "")
-
-            # If AJAX or JSON request, return success JSON
-            if is_xhr or accepts_json:
-                return jsonify({"success": True, "redirect": redirect_url})
-
-            # For regular form submissions, redirect to the target URL
-            return redirect(redirect_url)
-        else:
-            # Verification failed
-            app.logger.warning(f"Turnstile verification failed: {result}")
-
-            # If AJAX request, return JSON error
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return jsonify({"success": False, "error": "Verification failed"}), 403
-
-            # Otherwise redirect back to turnstile page
-            return redirect(url_for("turnstile_page", redirect_url=redirect_url))
-
-    except Exception as e:
-        app.logger.error(f"Turnstile verification error: {str(e)}")
-
-        # If AJAX request, return JSON error
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return (
-                jsonify(
-                    {"success": False, "error": "Server error during verification"}
-                ),
-                500,
-            )
-
-        # Otherwise redirect back to turnstile page
-        return redirect(url_for("turnstile_page", redirect_url=redirect_url))
-
-with open("sentences.txt", "r") as f, open("emotional_sentences.txt", "r") as f_emotional:
+# Load sentences from data files
+with open("data/sentences.txt", "r") as f, open("data/emotional_sentences.txt", "r") as f_emotional:
     # Store all sentences and clean them up
     all_harvard_sentences = [line.strip() for line in f.readlines() if line.strip()] + [line.strip() for line in f_emotional.readlines() if line.strip()]
     # Shuffle for initial random selection if needed, but main list remains ordered
@@ -387,10 +254,7 @@ def about():
 @app.route("/api/tts/generate", methods=["POST"])
 @limiter.limit("10 per minute")
 def generate_tts():
-    # If verification not setup, handle it first
-    if app.config["TURNSTILE_ENABLED"] and not session.get("turnstile_verified"):
-        return jsonify({"error": "Turnstile verification required"}), 403
-
+    # Turnstile verification removed for local development simplicity
     # Authentication has been disabled - anonymous access allowed
 
     data = request.json
@@ -476,9 +340,7 @@ def generate_tts():
 
 @app.route("/api/tts/audio/<session_id>/<model_key>")
 def get_audio(session_id, model_key):
-    # If verification not setup, handle it first
-    if app.config["TURNSTILE_ENABLED"] and not session.get("turnstile_verified"):
-        return jsonify({"error": "Turnstile verification required"}), 403
+    # Turnstile verification removed for local development simplicity
 
     if session_id not in app.tts_sessions:
         return jsonify({"error": "Invalid or expired session"}), 404

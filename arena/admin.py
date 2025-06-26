@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, current_app, jsonify, request, redirect, url_for, flash
+from admin_auth import require_admin_auth, verify_admin_password, login_admin, logout_admin, is_admin_logged_in
 from models import (
     db, User, Model, Vote, EloHistory, ModelType, 
     CoordinatedVotingCampaign, CampaignParticipant, UserTimeout,
     get_user_timeouts, get_coordinated_campaigns, resolve_campaign,
     create_user_timeout, cancel_user_timeout, check_user_timeout
 )
-from auth import admin_required
 from security import check_user_security_score
 from sqlalchemy import func, desc, extract, text
 from datetime import datetime, timedelta
@@ -15,8 +15,36 @@ from sqlalchemy import or_
 
 admin = Blueprint("admin", __name__, url_prefix="/admin")
 
+@admin.route("/login", methods=["GET", "POST"])
+def login():
+    """Admin login page"""
+    if is_admin_logged_in():
+        return redirect(url_for("admin.index"))
+    
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        
+        if verify_admin_password(password):
+            login_admin()
+            flash("Successfully logged in!", "success")
+            
+            # Redirect to the originally requested page if available
+            next_url = request.args.get("next") or url_for("admin.index")
+            return redirect(next_url)
+        else:
+            flash("Invalid password. Please try again.", "error")
+    
+    return render_template("admin/login.html")
+
+@admin.route("/logout")
+def logout():
+    """Admin logout"""
+    logout_admin()
+    flash("Successfully logged out!", "success")
+    return redirect(url_for("admin.login"))
+
 @admin.route("/")
-@admin_required
+@require_admin_auth
 def index():
     """Admin dashboard homepage"""
     # Get count statistics
@@ -83,7 +111,7 @@ def index():
     )
 
 @admin.route("/models")
-@admin_required
+@require_admin_auth
 def models():
     """Manage models"""
     tts_models = Model.query.filter_by(model_type=ModelType.TTS).order_by(Model.name).all()
@@ -97,7 +125,7 @@ def models():
 
 
 @admin.route("/model/<model_id>", methods=["GET", "POST"])
-@admin_required
+@require_admin_auth
 def edit_model(model_id):
     """Edit a model"""
     model = Model.query.get_or_404(model_id)
@@ -115,7 +143,7 @@ def edit_model(model_id):
     return render_template("admin/edit_model.html", model=model)
 
 @admin.route("/users")
-@admin_required
+@require_admin_auth
 def users():
     """Manage users"""
     users = User.query.order_by(User.username).all()
@@ -138,7 +166,6 @@ def users():
     return render_template("admin/users.html", users_with_scores=users_with_scores, admin_users=admin_users)
 
 @admin.route("/user/<int:user_id>")
-@admin_required
 def user_detail(user_id):
     """View user details"""
     user = User.query.get_or_404(user_id)
@@ -207,7 +234,6 @@ def user_detail(user_id):
     )
 
 @admin.route("/votes")
-@admin_required
 def votes():
     """View recent votes"""
     page = request.args.get('page', 1, type=int)
@@ -225,7 +251,6 @@ def votes():
     )
 
 @admin.route("/statistics")
-@admin_required
 def statistics():
     """View detailed statistics"""
     # Get daily votes for the past 30 days by model type
@@ -384,7 +409,6 @@ def statistics():
     )
 
 @admin.route("/activity")
-@admin_required
 def activity():
     """View recent text generations"""
     # Check if we have any active sessions from app.py
@@ -452,7 +476,6 @@ def activity():
     )
 
 @admin.route("/analytics")
-@admin_required
 def analytics():
     """View analytics data including session duration, IP addresses, etc."""
     
@@ -587,7 +610,6 @@ def analytics():
     )
 
 @admin.route("/security")
-@admin_required
 def security():
     """View security monitoring data and suspicious activity."""
     try:
@@ -689,7 +711,6 @@ def security():
 
 
 @admin.route("/timeouts")
-@admin_required
 def timeouts():
     """Manage user timeouts"""
     # Get active timeouts
@@ -715,7 +736,6 @@ def timeouts():
 
 
 @admin.route("/timeout/create", methods=["POST"])
-@admin_required
 def create_timeout():
     """Create a new user timeout"""
     try:
@@ -763,7 +783,6 @@ def create_timeout():
 
 
 @admin.route("/timeout/cancel/<int:timeout_id>", methods=["POST"])
-@admin_required
 def cancel_timeout(timeout_id):
     """Cancel an active timeout"""
     try:
@@ -791,7 +810,6 @@ def cancel_timeout(timeout_id):
 
 
 @admin.route("/campaigns")
-@admin_required
 def campaigns():
     """View and manage coordinated voting campaigns"""
     status_filter = request.args.get("status", "all")
@@ -818,7 +836,6 @@ def campaigns():
 
 
 @admin.route("/campaign/<int:campaign_id>")
-@admin_required
 def campaign_detail(campaign_id):
     """View detailed information about a coordinated voting campaign"""
     campaign = CoordinatedVotingCampaign.query.get_or_404(campaign_id)
@@ -842,7 +859,6 @@ def campaign_detail(campaign_id):
 
 
 @admin.route("/campaign/resolve/<int:campaign_id>", methods=["POST"])
-@admin_required
 def resolve_campaign_route(campaign_id):
     """Mark a campaign as resolved"""
     try:
@@ -873,7 +889,6 @@ def resolve_campaign_route(campaign_id):
 
 
 @admin.route("/api/user-search")
-@admin_required
 def user_search():
     """Search for users by username (for timeout creation)"""
     query = request.args.get("q", "").strip()
