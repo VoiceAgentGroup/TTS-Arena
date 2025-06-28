@@ -1,12 +1,12 @@
 from flask import Blueprint, render_template, current_app, jsonify, request, redirect, url_for, flash
-from admin_auth import require_admin_auth, verify_admin_password, login_admin, logout_admin, is_admin_logged_in
+from .auth import require_admin_auth, verify_admin_password, login_admin, logout_admin, is_admin_logged_in
 from models import (
     db, User, Model, Vote, EloHistory, ModelType, 
     CoordinatedVotingCampaign, CampaignParticipant, UserTimeout,
     get_user_timeouts, get_coordinated_campaigns, resolve_campaign,
     create_user_timeout, cancel_user_timeout, check_user_timeout
 )
-from security import check_user_security_score
+from services.security import check_user_security_score
 from sqlalchemy import func, desc, extract, text
 from datetime import datetime, timedelta
 import json
@@ -14,6 +14,24 @@ import os
 from sqlalchemy import or_
 
 admin = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+def _parse_vote_date(date_value):
+    """Parse vote date from various formats"""
+    if isinstance(date_value, str):
+        try:
+            # Try SQLite format first
+            return datetime.strptime(date_value, '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            try:
+                # Try with microseconds
+                return datetime.strptime(date_value, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                # If all else fails, return the string (template will handle gracefully)
+                return date_value
+    else:
+        # Already a datetime object
+        return date_value
 
 @admin.route("/login", methods=["GET", "POST"])
 def login():
@@ -51,10 +69,10 @@ def index():
     stats = {
         "total_users": User.query.count(),
         "total_votes": Vote.query.count(),
-        "tts_votes": Vote.query.filter_by(model_type=ModelType.TTS).count(),
-        "conversational_votes": Vote.query.filter_by(model_type=ModelType.CONVERSATIONAL).count(),
-        "tts_models": Model.query.filter_by(model_type=ModelType.TTS).count(),
-        "conversational_models": Model.query.filter_by(model_type=ModelType.CONVERSATIONAL).count(),
+        "tts_votes": Vote.query.filter_by(model_type=ModelType.TTS.value).count(),
+        "conversational_votes": Vote.query.filter_by(model_type=ModelType.CONVERSATIONAL.value).count(),
+        "tts_models": Model.query.filter_by(model_type=ModelType.TTS.value).count(),
+        "conversational_models": Model.query.filter_by(model_type=ModelType.CONVERSATIONAL.value).count(),
     }
     
     # Get recent votes
@@ -93,11 +111,11 @@ def index():
     
     # Get top models
     top_tts_models = Model.query.filter_by(
-        model_type=ModelType.TTS
+        model_type=ModelType.TTS.value
     ).order_by(Model.current_elo.desc()).limit(5).all()
     
     top_conversational_models = Model.query.filter_by(
-        model_type=ModelType.CONVERSATIONAL
+        model_type=ModelType.CONVERSATIONAL.value
     ).order_by(Model.current_elo.desc()).limit(5).all()
     
     return render_template(
@@ -114,8 +132,8 @@ def index():
 @require_admin_auth
 def models():
     """Manage models"""
-    tts_models = Model.query.filter_by(model_type=ModelType.TTS).order_by(Model.name).all()
-    conversational_models = Model.query.filter_by(model_type=ModelType.CONVERSATIONAL).order_by(Model.name).all()
+    tts_models = Model.query.filter_by(model_type=ModelType.TTS.value).order_by(Model.name).all()
+    conversational_models = Model.query.filter_by(model_type=ModelType.CONVERSATIONAL.value).order_by(Model.name).all()
     
     return render_template(
         "admin/models.html",
@@ -177,8 +195,8 @@ def user_detail(user_id):
     recent_votes = Vote.query.filter_by(user_id=user_id).order_by(Vote.vote_date.desc()).limit(20).all()
     
     # Get vote statistics
-    tts_votes = Vote.query.filter_by(user_id=user_id, model_type=ModelType.TTS).count()
-    conversational_votes = Vote.query.filter_by(user_id=user_id, model_type=ModelType.CONVERSATIONAL).count()
+    tts_votes = Vote.query.filter_by(user_id=user_id, model_type=ModelType.TTS.value).count()
+    conversational_votes = Vote.query.filter_by(user_id=user_id, model_type=ModelType.CONVERSATIONAL.value).count()
     
     # Get comprehensive model bias analysis
     # This counts how often each model was chosen vs how often it appeared
@@ -261,7 +279,7 @@ def statistics():
         func.count().label('count')
     ).filter(
         Vote.vote_date >= thirty_days_ago,
-        Vote.model_type == ModelType.TTS
+        Vote.model_type == ModelType.TTS.value
     ).group_by(
         func.date(Vote.vote_date)
     ).order_by(func.date(Vote.vote_date)).all()
@@ -271,7 +289,7 @@ def statistics():
         func.count().label('count')
     ).filter(
         Vote.vote_date >= thirty_days_ago,
-        Vote.model_type == ModelType.CONVERSATIONAL
+        Vote.model_type == ModelType.CONVERSATIONAL.value
     ).group_by(
         func.date(Vote.vote_date)
     ).order_by(func.date(Vote.vote_date)).all()
@@ -430,11 +448,11 @@ def activity():
     
     # Get recent votes which represent completed generations
     recent_tts_votes = Vote.query.filter_by(
-        model_type=ModelType.TTS
+        model_type=ModelType.TTS.value
     ).order_by(Vote.vote_date.desc()).limit(20).all()
     
     recent_conv_votes = Vote.query.filter_by(
-        model_type=ModelType.CONVERSATIONAL
+        model_type=ModelType.CONVERSATIONAL.value
     ).order_by(Vote.vote_date.desc()).limit(20).all()
     
     # Get votes per hour for the last 24 hours
@@ -587,15 +605,15 @@ def analytics():
         
         analytics_stats['recent_votes'] = [
             {
-                'id': vote.id,
-                'vote_date': vote.vote_date,
-                'duration': round(vote.session_duration_seconds, 2) if vote.session_duration_seconds else None,
-                'ip': vote.ip_address_partial,
-                'cache_hit': vote.cache_hit,
-                'model_type': vote.model_type,
-                'username': vote.username,
-                'chosen_model': vote.chosen_model,
-                'rejected_model': vote.rejected_model
+                'id': vote[0],
+                'vote_date': _parse_vote_date(vote[1]),
+                'duration': round(vote[2], 2) if vote[2] else None,
+                'ip': vote[3],
+                'cache_hit': vote[4],
+                'model_type': vote[5],
+                'username': vote[6],
+                'chosen_model': vote[7],
+                'rejected_model': vote[8]
             }
             for vote in recent_analytics
         ]
@@ -613,7 +631,7 @@ def analytics():
 def security():
     """View security monitoring data and suspicious activity."""
     try:
-        from security import (
+        from services.security import (
             detect_suspicious_voting_patterns, 
             detect_coordinated_voting, 
             check_user_security_score,
