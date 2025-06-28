@@ -1,38 +1,14 @@
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from huggingface_hub import hf_hub_download
+import random
 import tempfile
 
 # Get current date info
 year = datetime.now().year
 month = datetime.now().month
 
-# Check if running in a Hugging Face Space
-IS_SPACES = False
-if os.getenv("SPACE_REPO_NAME"):
-    print("Running in a Hugging Face Space 🤗")
-    IS_SPACES = True
-
-    # Setup database sync for HF Spaces
-    if not os.path.exists("instance/tts_arena.db"):
-        os.makedirs("instance", exist_ok=True)
-        try:
-            print("Database not found, downloading from HF dataset...")
-            hf_hub_download(
-                repo_id="TTS-AGI/database-arena-v2",
-                filename="tts_arena.db",
-                repo_type="dataset",
-                local_dir="instance",
-                token=os.getenv("HF_TOKEN"),
-            )
-            print("Database downloaded successfully ✅")
-        except Exception as e:
-            print(f"Error downloading database from HF dataset: {str(e)} ⚠️")
-
-# Load environment variables
-if not IS_SPACES:
-    load_dotenv()  # Only load .env if not running in a Hugging Face Space
+load_dotenv()
 
 # Configuration constants
 SMOOTHING_FACTOR_MODEL_SELECTION = 500  # For weighted random model selection
@@ -71,19 +47,57 @@ CONVERSATIONAL_MODELS = [
     # Add more conversational models here as needed
 ]
 
-class Config:
+MODEL_MAPPING = {
+    # Currently active models
+    "minimax-02-hd": {
+        "provider": "minimax",
+        "model": "speech-02-hd",
+    },
+    "seed-tts": {
+        "provider": "seed-tts", 
+        "model": "zh_male_M392_conversation_wvae_bigtts",
+    },
+}
+
+TTS_ROUTER_URL = "http://b1a19babde7c47e097a30796348d049c.ai-nm-z1-link.lanyun.net:8090/tts"
+
+TTS_ROUTER_HEADERS = {
+    "accept": "application/json",
+    "Content-Type": "application/json", 
+    "Authorization": f'Bearer {os.getenv("HF_TOKEN")}',
+}
+
+SPECIAL_MODELS = {
+    "csm-1b": "csm",
+    "playdialog-1.0": "playdialog", 
+    "dia-1.6b": "dia",
+}
+
+# PlayDialog voice configurations
+PLAYDIALOG_VOICES = {
+    "voice_1": "s3://voice-cloning-zero-shot/baf1ef41-36b6-428c-9bdf-50ba54682bd8/original/manifest.json",
+    "voice_2": "s3://voice-cloning-zero-shot/e040bd1b-f190-4bdb-83f0-75ef85b18f84/original/manifest.json",
+}
+
+# Token management for Zero GPU services
+ZEROGPU_TOKENS = os.getenv("ZEROGPU_TOKENS", "").split(",")
+
+
+def get_zerogpu_token():
+    """Get a random Zero GPU token for load balancing."""
+    return random.choice(ZEROGPU_TOKENS) if ZEROGPU_TOKENS and ZEROGPU_TOKENS[0] else ""
+
+
+class FlaskConfig:
     """Flask application configuration."""
     
     SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(24))
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///tts_arena.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_SAMESITE = "None" if IS_SPACES else "Lax"
+    SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
-    
-    # Force HTTPS when running in HuggingFace Spaces
-    if IS_SPACES:
-        PREFERRED_URL_SCHEME = "https"
+
 
 def get_client_ip():
     """Get the client's IP address, handling proxies and load balancers."""

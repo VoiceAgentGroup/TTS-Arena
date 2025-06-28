@@ -6,7 +6,7 @@ Handles dialogue generation using the Dia-1.6B model.
 
 import json
 import requests
-from ..config import get_zerogpu_token
+from config import get_zerogpu_token
 
 
 def predict_dia(script):

@@ -7,7 +7,7 @@ Handles multi-speaker conversational TTS using PlayHT's PlayDialog engine.
 import os
 from pyht import Client as PyhtClient
 from pyht.client import TTSOptions
-from ..config import PLAYDIALOG_VOICES
+from config import PLAYDIALOG_VOICES
 
 
 def predict_playdialog(script):

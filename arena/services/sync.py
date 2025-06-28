@@ -8,10 +8,9 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from concurrent.futures import ThreadPoolExecutor
 from huggingface_hub import HfApi
-from config import IS_SPACES
-from models import db
 from services.initialization import insert_initial_models
 
+IS_SPACES = False
 
 def setup_periodic_tasks(security_service=None):
     """Setup periodic background tasks for the application."""

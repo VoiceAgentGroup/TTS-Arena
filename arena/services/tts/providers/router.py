@@ -8,7 +8,7 @@ import json
 import base64
 import tempfile
 import requests
-from ..config import MODEL_MAPPING, TTS_ROUTER_URL, TTS_ROUTER_HEADERS
+from config import MODEL_MAPPING, TTS_ROUTER_URL, TTS_ROUTER_HEADERS
 
 
 def predict_router(text, model):

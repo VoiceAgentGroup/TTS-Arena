@@ -1,28 +1,22 @@
-from flask import Flask, render_template, g, redirect, request, jsonify, send_file
+from flask import Flask, render_template, g
 from flask_login import LoginManager, current_user
 from flask_limiter import Limiter
 from flask_migrate import Migrate
 import random
 import json
 import os
-from datetime import datetime
 
 # Import our new modular components
-from config import Config, IS_SPACES, get_client_ip
-from models import db, User, Model, ModelType, get_historical_leaderboard_data
+from config import FlaskConfig, get_client_ip
+from models import db, User
 from services.initialization import insert_initial_models
 from admin import admin
 from api import register_api_blueprints, init_api_limiter
-from services import setup_cleanup, setup_periodic_tasks, TTS_SESSIONS, CONVERSATIONAL_SESSIONS, init_security_service
-import uuid
-import shutil
-from datetime import timedelta
-from concurrent.futures import ThreadPoolExecutor
+from services import setup_cleanup, setup_periodic_tasks, init_security_service
 from config import TEMP_AUDIO_DIR
-from huggingface_hub import hf_hub_download
 
 app = Flask(__name__)
-app.config.from_object(Config)
+app.config.from_object(FlaskConfig)
 
 # Initialize extensions
 db.init_app(app)
@@ -63,14 +57,7 @@ def load_user(user_id):
 @app.before_request
 def before_request():
     g.user = current_user
-    g.is_admin = True  # Admin access enabled by default (auth disabled)
-
-    # Ensure HTTPS for HuggingFace Spaces environment
-    if IS_SPACES and request.headers.get("X-Forwarded-Proto") == "http":
-        url = request.url.replace("http://", "https://", 1)
-        return redirect(url, code=301)
-
-    # Turnstile verification removed for local development simplicity
+    g.is_admin = True
 
 
 @app.route("/")

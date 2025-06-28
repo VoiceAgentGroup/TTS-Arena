@@ -5,7 +5,7 @@ This module provides the main predict_tts function that routes requests
 to appropriate providers based on the model type.
 """
 
-from .config import SPECIAL_MODELS
+from config import SPECIAL_MODELS
 from .providers import predict_csm, predict_playdialog, predict_dia, predict_router
 
 
