@@ -191,7 +191,7 @@ def get_audio(session_id, model_key):
     session_data = TTS_SESSIONS[session_id]
 
     # Check if session expired
-    if datetime.now() > session_data["expires_at"]:
+    if datetime.utcnow() > session_data["expires_at"]:
         cleanup_session(session_id)
         return jsonify({"error": "Session expired"}), 410
 
@@ -251,7 +251,7 @@ def submit_vote():
     session_data = TTS_SESSIONS[session_id]
 
     # Check if session expired
-    if datetime.now() > session_data["expires_at"]:
+    if datetime.utcnow() > session_data["expires_at"]:
         cleanup_session(session_id)
         return jsonify({"error": "Session expired"}), 410
 
@@ -274,7 +274,7 @@ def submit_vote():
     )
 
     # Calculate session duration and gather analytics data
-    vote_time = datetime.now()
+    vote_time = datetime.utcnow()
     session_duration = (vote_time - session_data["created_at"]).total_seconds()
     client_ip = get_client_ip()
     user_agent = request.headers.get('User-Agent')
@@ -395,13 +395,13 @@ def get_session_status(session_id):
     session_data = TTS_SESSIONS[session_id]
     
     # Check if expired
-    is_expired = datetime.now() > session_data["expires_at"]
+    is_expired = datetime.utcnow() > session_data["expires_at"]
     if is_expired:
         cleanup_session(session_id)
         return jsonify({"error": "Session expired"}), 410
     
     # Calculate remaining time
-    remaining_seconds = (session_data["expires_at"] - datetime.now()).total_seconds()
+    remaining_seconds = (session_data["expires_at"] - datetime.utcnow()).total_seconds()
     
     return jsonify({
         "session_id": session_id,
