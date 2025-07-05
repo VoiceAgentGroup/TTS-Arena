@@ -10,4 +10,5 @@ flask-migrate
 gunicorn
 waitress
 fal-client
+openai
 # git+https://github.com/playht/pyht

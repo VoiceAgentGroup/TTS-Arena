@@ -32,40 +32,139 @@ limiter = Limiter(
 # Use the same temp directory as TTS API for consistency
 from config import TEMP_AUDIO_DIR
 
-@conversational_bp.route("/generate", methods=["POST"])
-@limiter.limit("5 per minute")
-def generate_podcast():
-    """Generate conversational/podcast audio."""
+@conversational_bp.route("/generate-from-theme", methods=["POST"])
+@limiter.limit("3 per minute")  # More restrictive since this uses LLM API
+def generate_podcast_from_theme():
+    """Generate conversational/podcast audio from theme and keywords."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
         
-    script = data.get("script")
+    theme = data.get("theme")
+    keywords = data.get("keywords", [])
+    length = data.get("length", "medium")
+    style = data.get("style", "podcast")
 
-    if not script or not isinstance(script, list) or len(script) < 2:
-        return jsonify({"error": "Invalid script format or too short"}), 400
+    if not theme or not isinstance(theme, str) or len(theme.strip()) < 3:
+        return jsonify({"error": "Theme must be a non-empty string with at least 3 characters"}), 400
+    
+    if not isinstance(keywords, list):
+        return jsonify({"error": "Keywords must be a list"}), 400
+    
+    if length not in ["short", "medium", "long"]:
+        return jsonify({"error": "Length must be 'short', 'medium', or 'long'"}), 400
+        
+    if style not in ["podcast", "interview", "debate", "casual", "educational", "news"]:
+        return jsonify({"error": "Invalid style parameter"}), 400
 
-    # Validate script format
-    for line in script:
-        if not isinstance(line, dict) or "text" not in line or "speaker_id" not in line:
-            return (
-                jsonify(
-                    {
-                        "error": "Invalid script line format. Each line must have text and speaker_id"
-                    }
-                ),
-                400,
+    try:
+        # Generate script using LLM
+        from services import get_content_generator
+        content_generator = get_content_generator()
+        
+        if not content_generator.is_available():
+            return jsonify({"error": "LLM content generation service not available. Please configure OPENAI_API_KEY."}), 503
+        
+        # Generate the conversational script
+        script = content_generator.generate_conversation(
+            theme=theme.strip(),
+            keywords=[k.strip() for k in keywords if k.strip()],
+            length=length,
+            style=style
+        )
+        
+        # Now use the generated script with the existing TTS generation logic
+        return _generate_podcast_audio(script)
+        
+    except Exception as e:
+        app.logger.error(f"Theme-based generation error: {str(e)}")
+        return jsonify({"error": f"Failed to generate conversation: {str(e)}"}), 500
+
+@conversational_bp.route("/generate", methods=["POST"])
+@limiter.limit("5 per minute")
+def generate_podcast():
+    """Generate conversational/podcast audio from pre-written script or theme."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+    
+    # Check if this is a script-based request or theme-based request
+    if "script" in data:
+        # Original script-based generation
+        script = data.get("script")
+        
+        if not script or not isinstance(script, list) or len(script) < 2:
+            return jsonify({"error": "Invalid script format or too short"}), 400
+
+        # Validate script format
+        for line in script:
+            if not isinstance(line, dict) or "text" not in line or "speaker_id" not in line:
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid script line format. Each line must have text and speaker_id"
+                        }
+                    ),
+                    400,
+                )
+            if (
+                not line["text"]
+                or not isinstance(line["speaker_id"], int)
+                or line["speaker_id"] not in [0, 1]
+            ):
+                return (
+                    jsonify({"error": "Invalid script content. Speaker ID must be 0 or 1"}),
+                    400,
+                )
+        
+        return _generate_podcast_audio(script)
+        
+    elif "theme" in data:
+        # Theme-based generation (redirect to the dedicated endpoint logic)
+        theme = data.get("theme")
+        keywords = data.get("keywords", [])
+        length = data.get("length", "medium")
+        style = data.get("style", "podcast")
+
+        if not theme or not isinstance(theme, str) or len(theme.strip()) < 3:
+            return jsonify({"error": "Theme must be a non-empty string with at least 3 characters"}), 400
+        
+        if not isinstance(keywords, list):
+            return jsonify({"error": "Keywords must be a list"}), 400
+        
+        if length not in ["short", "medium", "long"]:
+            return jsonify({"error": "Length must be 'short', 'medium', or 'long'"}), 400
+            
+        if style not in ["podcast", "interview", "debate", "casual", "educational", "news"]:
+            return jsonify({"error": "Invalid style parameter"}), 400
+
+        try:
+            # Generate script using LLM
+            from services import get_content_generator
+            content_generator = get_content_generator()
+            
+            if not content_generator.is_available():
+                return jsonify({"error": "LLM content generation service not available. Please configure OPENAI_API_KEY."}), 503
+            
+            # Generate the conversational script
+            script = content_generator.generate_conversation(
+                theme=theme.strip(),
+                keywords=[k.strip() for k in keywords if k.strip()],
+                length=length,
+                style=style
             )
-        if (
-            not line["text"]
-            or not isinstance(line["speaker_id"], int)
-            or line["speaker_id"] not in [0, 1]
-        ):
-            return (
-                jsonify({"error": "Invalid script content. Speaker ID must be 0 or 1"}),
-                400,
-            )
+            
+            # Now use the generated script with the existing TTS generation logic
+            return _generate_podcast_audio(script)
+            
+        except Exception as e:
+            app.logger.error(f"Theme-based generation error: {str(e)}")
+            return jsonify({"error": f"Failed to generate conversation: {str(e)}"}), 500
+    else:
+        return jsonify({"error": "Either 'script' or 'theme' must be provided"}), 400
 
+def _generate_podcast_audio(script):
+    """Internal function to generate podcast audio from a validated script."""
     # Get two conversational models (currently only CSM and PlayDialog)
     available_models = Model.query.filter_by(
         model_type=ModelType.CONVERSATIONAL.value, is_active=True
@@ -157,6 +256,7 @@ def generate_podcast():
                 "audio_a": f"/api/conversational/audio/{session_id}/a",
                 "audio_b": f"/api/conversational/audio/{session_id}/b",
                 "expires_in": 1800,  # 30 minutes in seconds
+                "generated_script": script,  # Include the script in response for theme-based generation
             }
         )
 

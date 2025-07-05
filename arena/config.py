@@ -82,6 +82,10 @@ PLAYDIALOG_VOICES = {
 # Token management for Zero GPU services
 ZEROGPU_TOKENS = os.getenv("ZEROGPU_TOKENS", "").split(",")
 
+# OpenAI configuration for LLM content generation
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")  # Default to GPT-3.5-turbo for cost efficiency
+
 
 def get_zerogpu_token():
     """Get a random Zero GPU token for load balancing."""
