@@ -66,7 +66,6 @@
                     </span>
                 </button>
             </div>
-
             <div class="player">
                 <div class="player-label">Model B <span class="model-name-display"></span></div>
                 <div class="wave-player-container" data-model="b"></div>
@@ -78,6 +77,15 @@
                     </span>
                 </button>
             </div>
+        </div>
+        <div class="tie-vote-container">
+            <button class="vote-btn tie-btn" data-model="tie" disabled>
+                Or it's a tie
+                <span class="shortcut-key">T</span>
+                <span class="vote-loader" style="display: none;">
+                    <div class="vote-spinner"></div>
+                </span>
+            </button>
         </div>
     </div>
 
@@ -163,7 +171,6 @@
                         </span>
                     </button>
                 </div>
-
                 <div class="player">
                     <div class="player-label">Model B <span class="model-name-display"></span></div>
                     <div class="podcast-wave-player-b"></div>
@@ -176,23 +183,32 @@
                     </button>
                 </div>
             </div>
+            <div class="tie-vote-container">
+                <button class="vote-btn tie-btn" data-model="tie" disabled>
+                    Tie
+                    <span class="shortcut-key">T</span>
+                    <span class="vote-loader" style="display: none;">
+                        <div class="vote-spinner"></div>
+                    </span>
+                </button>
+            </div>
+        </div>
 
-            <div class="podcast-vote-results vote-results" style="display: none;">
-                <h3 class="results-heading">Vote Recorded!</h3>
-                <div class="results-content">
-                    <div class="chosen-model">
-                        <strong>You chose:</strong> <span class="chosen-model-name"></span>
-                    </div>
-                    <div class="rejected-model">
-                        <strong>Over:</strong> <span class="rejected-model-name"></span>
-                    </div>
+        <div class="podcast-vote-results vote-results" style="display: none;">
+            <h3 class="results-heading">Vote Recorded!</h3>
+            <div class="results-content">
+                <div class="chosen-model">
+                    <strong>You chose:</strong> <span class="chosen-model-name"></span>
+                </div>
+                <div class="rejected-model">
+                    <strong>Over:</strong> <span class="rejected-model-name"></span>
                 </div>
             </div>
+        </div>
 
-            <div class="podcast-next-round-container next-round-container" style="display: none;">
-                <button class="podcast-next-round-btn next-round-btn">Next Round <span
-                        class="shortcut-key">N</span></button>
-            </div>
+        <div class="podcast-next-round-container next-round-container" style="display: none;">
+            <button class="podcast-next-round-btn next-round-btn">Next Round <span
+                    class="shortcut-key">N</span></button>
         </div>
     </div>
 </div>
@@ -997,6 +1013,31 @@
     }
 
     /* Login prompt styles removed - authentication disabled */
+
+    /* Tie vote button container */
+    .tie-vote-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 16px;
+    }
+
+    .tie-btn {
+        max-width: 200px;
+        padding: 12px 24px;
+    }
+
+    @media (max-width: 600px) {
+        .tie-vote-container {
+            margin-top: 12px;
+        }
+
+        .tie-btn {
+            width: 100%;
+            max-width: none;
+            padding: 14px 0;
+            font-size: 1rem;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -1046,12 +1087,9 @@
 
         // Load fallback sentences directly from Flask variable (JSON string)
         // Assign to a variable first to help linters
-        // eslint-disable-next-line
         const fallbackSentencesJson = {{ harvard_sentences | tojson | safe
     }};
     const fallbackRandomTexts = JSON.parse(fallbackSentencesJson);
-
-    // Cached sentences functionality removed - using fallback sentences only
 
     // Check URL hash for direct tab access
     function checkHashAndSetTab() {
@@ -1207,7 +1245,7 @@
     }
 
     function handleVote(model) {
-        // Disable both vote buttons
+        // Disable all vote buttons
         voteButtons.forEach(btn => {
             btn.disabled = true;
             if (btn.dataset.model === model) {
@@ -1238,13 +1276,11 @@
                 // Hide loaders
                 voteButtons.forEach(btn => {
                     btn.querySelector('.vote-loader').style.display = 'none';
-
                     // Highlight the selected button
                     if (btn.dataset.model === model) {
                         btn.classList.add('selected');
                     }
                 });
-
 
                 // Store model names from vote response
                 if (data.chosen_model && data.chosen_model.name) {
@@ -1257,15 +1293,20 @@
                 modelNameDisplays[1].textContent = modelNames.b ? `(${modelNames.b})` : '';
 
                 // Show vote results
-                chosenModelNameElement.textContent = data.chosen_model.name;
-                rejectedModelNameElement.textContent = data.rejected_model.name;
+                if (model === 'tie') {
+                    chosenModelNameElement.textContent = 'Tie';
+                    rejectedModelNameElement.textContent = 'Tie';
+                } else {
+                    chosenModelNameElement.textContent = data.chosen_model.name;
+                    rejectedModelNameElement.textContent = data.rejected_model.name;
+                }
                 voteResultsContainer.style.display = 'block';
 
                 // Show next round button
                 nextRoundContainer.style.display = 'block';
 
                 // Show success toast
-                openToast("Vote recorded successfully!", "success");
+                openToast('Vote recorded successfully!', 'success');
             })
             .catch(error => {
                 // Re-enable vote buttons
@@ -1275,7 +1316,7 @@
                 });
 
                 // Error handling
-                openToast(error.message, "error");
+                openToast(error.message, 'error');
                 console.error('Error:', error);
             });
     }
@@ -1406,6 +1447,12 @@
             } else if (playersContainer.style.display !== 'none' && !bothSamplesPlayed) {
                 showListenToastMessage();
             }
+        } else if (e.key.toLowerCase() === 't') {
+            if (bothSamplesPlayed && !voteButtons[2].disabled) {
+                handleVote('tie');
+            } else if (playersContainer.style.display !== 'none' && !bothSamplesPlayed) {
+                showListenToastMessage();
+            }
         } else if (e.key.toLowerCase() === 'n') {
             // N for Next Random Round (works anytime except when input focused)
             if (!e.ctrlKey && !e.metaKey && !e.altKey) { // Ensure Alt isn't pressed either
@@ -1440,8 +1487,8 @@
     // Add event listener for next round button
     nextRoundBtn.addEventListener('click', resetToInitialState);
 
-    // Fetch cached sentences when the DOM is ready
-    // Cached sentences functionality removed - using fallback sentences only
+        // Fetch cached sentences when the DOM is ready
+        // Cached sentences functionality removed - using fallback sentences only
     });
 </script>
 
@@ -1813,7 +1860,7 @@
 
         // Handle vote for a podcast model
         function handlePodcastVote(model) {
-            // Disable both vote buttons
+            // Disable all vote buttons
             podcastVoteButtons.forEach(btn => {
                 btn.disabled = true;
                 if (btn.dataset.model === model) {
@@ -1844,7 +1891,6 @@
                     // Hide loaders
                     podcastVoteButtons.forEach(btn => {
                         btn.querySelector('.vote-loader').style.display = 'none';
-
                         // Highlight the selected button
                         if (btn.dataset.model === model) {
                             btn.classList.add('selected');
@@ -1861,15 +1907,20 @@
                     modelNameDisplays[1].textContent = data.names.b ? `(${data.names.b})` : '';
 
                     // Show vote results
-                    chosenModelNameElement.textContent = data.chosen_model.name;
-                    rejectedModelNameElement.textContent = data.rejected_model.name;
+                    if (model === 'tie') {
+                        chosenModelNameElement.textContent = 'Tie';
+                        rejectedModelNameElement.textContent = 'Tie';
+                    } else {
+                        chosenModelNameElement.textContent = data.chosen_model.name;
+                        rejectedModelNameElement.textContent = data.rejected_model.name;
+                    }
                     podcastVoteResults.style.display = 'block';
 
                     // Show next round button
                     podcastNextRoundContainer.style.display = 'block';
 
                     // Show success toast
-                    openToast("Vote recorded successfully!", "success");
+                    openToast('Vote recorded successfully!', 'success');
                 })
                 .catch(error => {
                     // Re-enable vote buttons
@@ -1879,7 +1930,7 @@
                     });
 
                     // Error handling
-                    openToast(error.message, "error");
+                    openToast(error.message, 'error');
                     console.error('Error:', error);
                 });
         }
@@ -1936,6 +1987,12 @@
             } else if (e.key.toLowerCase() === 'b') {
                 if (bothPodcastSamplesPlayed && !podcastVoteButtons[1].disabled) {
                     handlePodcastVote('b');
+                } else if (podcastPlayerContainer.style.display !== 'none' && !bothPodcastSamplesPlayed) {
+                    openToast("Please listen to both audio samples before voting", "info");
+                }
+            } else if (e.key.toLowerCase() === 't') {
+                if (bothPodcastSamplesPlayed && !podcastVoteButtons[2].disabled) {
+                    handlePodcastVote('tie');
                 } else if (podcastPlayerContainer.style.display !== 'none' && !bothPodcastSamplesPlayed) {
                     openToast("Please listen to both audio samples before voting", "info");
                 }

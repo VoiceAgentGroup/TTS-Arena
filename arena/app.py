@@ -128,6 +128,10 @@ def init_db():
 # Development server configuration
 if __name__ == "__main__":
     with app.app_context():
+        from models import db
+        db.create_all()
+        insert_initial_models()
+
         # Initialize security service
         init_security_service(app)
         

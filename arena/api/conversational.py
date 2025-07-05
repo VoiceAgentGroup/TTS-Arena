@@ -208,19 +208,19 @@ def get_podcast_audio(session_id, model_key):
 @conversational_bp.route("/vote", methods=["POST"])
 @limiter.limit("30 per minute")
 def submit_podcast_vote():
-    """Submit vote for conversational comparison."""
+    """Submit vote for conversational comparison. Supports tie votes."""
 
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
         
     session_id = data.get("session_id")
-    chosen_model_key = data.get("chosen_model")  # "a" or "b"
+    chosen_model_key = data.get("chosen_model")  # "a", "b", or "tie"
 
     if not session_id or session_id not in CONVERSATIONAL_SESSIONS:
         return jsonify({"error": "Invalid or expired session"}), 404
 
-    if not chosen_model_key or chosen_model_key not in ["a", "b"]:
+    if not chosen_model_key or chosen_model_key not in ["a", "b", "tie"]:
         return jsonify({"error": "Invalid chosen model"}), 400
 
     session_data = CONVERSATIONAL_SESSIONS[session_id]
@@ -235,18 +235,10 @@ def submit_podcast_vote():
         return jsonify({"error": "Vote already submitted for this session"}), 400
 
     # Get model IDs and audio paths
-    chosen_id = (
-        session_data["model_a"] if chosen_model_key == "a" else session_data["model_b"]
-    )
-    rejected_id = (
-        session_data["model_b"] if chosen_model_key == "a" else session_data["model_a"]
-    )
-    chosen_audio_path = (
-        session_data["audio_a"] if chosen_model_key == "a" else session_data["audio_b"]
-    )
-    rejected_audio_path = (
-        session_data["audio_b"] if chosen_model_key == "a" else session_data["audio_a"]
-    )
+    model_a_id = session_data["model_a"]
+    model_b_id = session_data["model_b"]
+    audio_a_path = session_data["audio_a"]
+    audio_b_path = session_data["audio_b"]
 
     # Calculate session duration and gather analytics data
     vote_time = datetime.utcnow()
@@ -255,22 +247,44 @@ def submit_podcast_vote():
     user_agent = request.headers.get('User-Agent')
     cache_hit = session_data.get("cache_hit", False)
 
-    # Record vote with anonymous user (no authentication)
     user_id = None  # Anonymous voting
-    vote_id = record_vote(
-        user_id,
-        session_data["text"],
-        chosen_id,
-        rejected_id,
-        ModelType.CONVERSATIONAL.value,
-        session_duration=session_duration,
-        ip_address=client_ip,
-        user_agent=user_agent,
-        generation_date=session_data.get("created_at"),
-        cache_hit=session_data.get("cache_hit", False),
-    )
 
-    if vote_id is None:
+    if chosen_model_key == "tie":
+        vote_id = record_vote(
+            user_id,
+            {"model_a": model_a_id, "model_b": model_b_id},
+            'tie',
+            'tie',
+            ModelType.CONVERSATIONAL.value,
+            session_duration=session_duration,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            generation_date=session_data.get("created_at"),
+            cache_hit=cache_hit,
+        )
+        chosen_id = model_a_id
+        rejected_id = model_b_id
+        chosen_audio_path = audio_a_path
+        rejected_audio_path = audio_b_path
+    else:
+        chosen_id = model_a_id if chosen_model_key == "a" else model_b_id
+        rejected_id = model_b_id if chosen_model_key == "a" else model_a_id
+        chosen_audio_path = audio_a_path if chosen_model_key == "a" else audio_b_path
+        rejected_audio_path = audio_b_path if chosen_model_key == "a" else audio_a_path
+        vote_id = record_vote(
+            user_id,
+            session_data["text"],
+            chosen_id,
+            rejected_id,
+            ModelType.CONVERSATIONAL.value,
+            session_duration=session_duration,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            generation_date=session_data.get("created_at"),
+            cache_hit=cache_hit,
+        )
+
+    if not vote_id or (isinstance(vote_id, dict) and not vote_id.get("success", True)):
         return jsonify({"error": "Vote recording failed"}), 500
 
     # --- Save preference data ---

@@ -71,14 +71,81 @@ def calculate_elo_change(winner_elo, loser_elo, k_factor=32):
     return winner_new_elo, loser_new_elo
 
 
+def calculate_elo_tie(elo_a, elo_b, k_factor=32):
+    """Calculate Elo rating changes for a tie."""
+    expected_a = 1 / (1 + math.pow(10, (elo_b - elo_a) / 400))
+    expected_b = 1 / (1 + math.pow(10, (elo_a - elo_b) / 400))
+    new_elo_a = elo_a + k_factor * (0.5 - expected_a)
+    new_elo_b = elo_b + k_factor * (0.5 - expected_b)
+    return new_elo_a, new_elo_b
+
+
 def record_vote(user_id, text, chosen_model_id, rejected_model_id, model_type, 
                 session_duration=None, ip_address=None, user_agent=None, 
                 generation_date=None, cache_hit=None):
-    """Record a vote and update ELO ratings."""
+    """Record a vote and update ELO ratings. Supports ties if chosen_model_id or rejected_model_id is 'tie'."""
     from models.model import Model
     from models.utils import anonymize_ip_address
     
     try:
+        # Tie logic: if either model id is 'tie', treat as a tie
+        is_tie = (chosen_model_id == 'tie' or rejected_model_id == 'tie')
+        if is_tie:
+            # For a tie, both model IDs must be provided (not 'tie')
+            # Assume text contains both model IDs in a tuple if tie
+            if isinstance(text, dict) and 'model_a' in text and 'model_b' in text:
+                model_a_id = text['model_a']
+                model_b_id = text['model_b']
+            else:
+                # Fallback: treat chosen_model_id and rejected_model_id as the two models
+                model_a_id = chosen_model_id if chosen_model_id != 'tie' else rejected_model_id
+                model_b_id = rejected_model_id if rejected_model_id != 'tie' else chosen_model_id
+            model_a = db.session.get(Model, model_a_id)
+            model_b = db.session.get(Model, model_b_id)
+            if not model_a or not model_b:
+                raise ValueError("Invalid model IDs for tie")
+            new_elo_a, new_elo_b = calculate_elo_tie(model_a.current_elo, model_b.current_elo)
+            model_a.current_elo = new_elo_a
+            model_b.current_elo = new_elo_b
+            model_a.match_count += 1
+            model_b.match_count += 1
+            # Record ELO history
+            vote = Vote(
+                user_id=user_id,
+                text=str(text),
+                model_chosen=model_a_id,
+                model_rejected=model_b_id,
+                model_type=model_type,
+                session_duration_seconds=session_duration,
+                ip_address_partial=anonymize_ip_address(ip_address),
+                user_agent=user_agent,
+                generation_date=generation_date,
+                cache_hit=cache_hit
+            )
+            db.session.add(vote)
+            db.session.flush()
+            elo_history_a = EloHistory(
+                model_id=model_a_id,
+                elo_score=new_elo_a,
+                vote_id=vote.id,
+                model_type=model_type
+            )
+            elo_history_b = EloHistory(
+                model_id=model_b_id,
+                elo_score=new_elo_b,
+                vote_id=vote.id,
+                model_type=model_type
+            )
+            db.session.add(elo_history_a)
+            db.session.add(elo_history_b)
+            db.session.commit()
+            logging.info(f"Vote recorded: Tie between {model_a_id} (Elo: {new_elo_a:.1f}) and {model_b_id} (Elo: {new_elo_b:.1f})")
+            return {
+                "success": True,
+                "vote_id": vote.id,
+                "chosen_model_new_elo": new_elo_a,
+                "rejected_model_new_elo": new_elo_b
+            }
         # Create the vote record
         vote = Vote(
             user_id=user_id,
