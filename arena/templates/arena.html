@@ -112,15 +112,15 @@
 </div>
 
 <div id="conversational-tab" class="tab-content">
-    <div class="podcast-container">
+    <div class="conversation-container">
         <!-- Mode Selection Tabs -->
-        <div class="podcast-mode-tabs">
-            <div class="podcast-mode-tab active" data-mode="theme">AI Generated</div>
-            <div class="podcast-mode-tab" data-mode="script">Custom Script</div>
+        <div class="conversation-mode-tabs">
+            <div class="conversation-mode-tab active" data-mode="theme">AI Generated</div>
+            <div class="conversation-mode-tab" data-mode="script">Custom Script</div>
         </div>
 
         <!-- Theme-based Generation UI (AI Generated) -->
-        <div id="theme-mode" class="podcast-mode-content active">
+        <div id="theme-mode" class="conversation-mode-content active">
             <div class="theme-generation-form">
                 <div class="theme-input-group">
                     <label for="theme-input">Conversation Theme:</label>
@@ -141,38 +141,28 @@
                     <div class="option-group">
                         <label for="length-select">Length:</label>
                         <select id="length-select" class="option-select">
-                            <option value="short">Short (8-12 lines)</option>
-                            <option value="medium" selected>Medium (12-20 lines)</option>
-                            <option value="long">Long (20-30 lines)</option>
+                            {% for key, description in length_options.items() %}
+                            <option value="{{ key }}" {% if key=='medium' %}selected{% endif %}>
+                                {{ key.title() }} ({{ description.split('(')[1].split(')')[0] if '(' in description else
+                                description }})
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
 
                     <div class="option-group">
                         <label for="style-select">Style:</label>
                         <select id="style-select" class="option-select">
-                            <option value="podcast" selected>Podcast</option>
-                            <option value="interview">Interview</option>
-                            <option value="debate">Debate</option>
-                            <option value="casual">Casual</option>
-                            <option value="educational">Educational</option>
-                            <option value="news">News</option>
+                            {% for key, description in style_options.items() %}
+                            <option value="{{ key }}" {% if key=='conversation' %}selected{% endif %}>
+                                {{ key.title() }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>
 
                 <div class="theme-controls">
-                    <button type="button" class="theme-random-btn" title="Load random theme">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-shuffle-icon lucide-shuffle">
-                            <path d="m18 14 4 4-4 4" />
-                            <path d="m18 2 4 4-4 4" />
-                            <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" />
-                            <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" />
-                            <path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />
-                        </svg>
-                        Random Theme
-                    </button>
                     <button type="button" class="theme-generate-btn">Generate Conversation</button>
                 </div>
 
@@ -182,15 +172,15 @@
                     <div class="script-lines-preview"></div>
                     <div class="script-actions">
                         <button type="button" class="edit-script-btn">Edit Script</button>
-                        <button type="button" class="generate-audio-btn">Generate Audio</button>
+                        <button type="button" class="generate-audio-btn">Generate TTS Audio</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Script-based Generation UI (Custom Script) -->
-        <div id="script-mode" class="podcast-mode-content">
-            <div class="podcast-controls">
+        <div id="script-mode" class="conversation-mode-content">
+            <div class="conversation-controls">
                 <button type="button" class="segmented-btn random-script-btn" title="Load random script">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -203,23 +193,23 @@
                     </svg>
                     Random Script
                 </button>
-                <button type="button" class="podcast-synth-btn">Generate Podcast</button>
+                <button type="button" class="conversation-synth-btn">Generate Conversation</button>
             </div>
 
-            <div class="podcast-script-container">
-                <div class="podcast-lines">
+            <div class="conversation-script-container">
+                <div class="conversation-lines">
                     <!-- Script lines will be added here -->
                 </div>
 
                 <button type="button" class="add-line-btn">+ Add Line</button>
 
-                <div class="keyboard-hint podcast-keyboard-hint">
+                <div class="keyboard-hint conversation-keyboard-hint">
                     Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or <kbd>Alt</kbd>+<kbd>Enter</kbd> to add a new line
                 </div>
             </div>
         </div>
 
-        <div class="podcast-loading-container" style="display: none;">
+        <div class="conversation-loading-container" style="display: none;">
             <div class="loader-wrapper">
                 <div class="loader-animation">
                     <div class="sound-wave">
@@ -231,16 +221,16 @@
                         <span></span>
                     </div>
                 </div>
-                <div class="loader-text">Generating podcast...</div>
+                <div class="loader-text">Generating conversation...</div>
                 <div class="loader-subtext">This may take up to a minute</div>
             </div>
         </div>
 
-        <div class="podcast-player-container" style="display: none;">
+        <div class="conversation-player-container" style="display: none;">
             <div class="players-row">
                 <div class="player">
                     <div class="player-label">Model A <span class="model-name-display"></span></div>
-                    <div class="podcast-wave-player-a"></div>
+                    <div class="conversation-wave-player-a"></div>
                     <button class="vote-btn" data-model="a" disabled>
                         Vote for A
                         <span class="shortcut-key">A</span>
@@ -251,7 +241,7 @@
                 </div>
                 <div class="player">
                     <div class="player-label">Model B <span class="model-name-display"></span></div>
-                    <div class="podcast-wave-player-b"></div>
+                    <div class="conversation-wave-player-b"></div>
                     <button class="vote-btn" data-model="b" disabled>
                         Vote for B
                         <span class="shortcut-key">B</span>
@@ -272,7 +262,7 @@
             </div>
         </div>
 
-        <div class="podcast-vote-results vote-results" style="display: none;">
+        <div class="conversation-vote-results vote-results" style="display: none;">
             <h3 class="results-heading">Vote Recorded!</h3>
             <div class="results-content">
                 <div class="chosen-model">
@@ -284,8 +274,8 @@
             </div>
         </div>
 
-        <div class="podcast-next-round-container next-round-container" style="display: none;">
-            <button class="podcast-next-round-btn next-round-btn">Next Round <span
+        <div class="conversation-next-round-container next-round-container" style="display: none;">
+            <button class="conversation-next-round-btn next-round-btn">Next Round <span
                     class="shortcut-key">N</span></button>
         </div>
     </div>
@@ -773,13 +763,13 @@
         }
     }
 
-    /* Podcast UI styles */
-    .podcast-container {
+    /* Conversation UI styles */
+    .conversation-container {
         width: 100%;
     }
 
     /* Mode selection tabs */
-    .podcast-mode-tabs {
+    .conversation-mode-tabs {
         display: flex;
         border-bottom: 1px solid var(--border-color);
         margin-bottom: 24px;
@@ -788,7 +778,7 @@
         overflow: hidden;
     }
 
-    .podcast-mode-tab {
+    .conversation-mode-tab {
         flex: 1;
         padding: 12px 24px;
         cursor: pointer;
@@ -799,17 +789,17 @@
         transition: background-color 0.2s, color 0.2s;
     }
 
-    .podcast-mode-tab:last-child {
+    .conversation-mode-tab:last-child {
         border-right: none;
     }
 
-    .podcast-mode-tab.active {
+    .conversation-mode-tab.active {
         background-color: white;
         color: var(--primary-color);
         position: relative;
     }
 
-    .podcast-mode-tab.active::after {
+    .conversation-mode-tab.active::after {
         content: '';
         position: absolute;
         bottom: -1px;
@@ -819,11 +809,11 @@
         background-color: var(--primary-color);
     }
 
-    .podcast-mode-content {
+    .conversation-mode-content {
         display: none;
     }
 
-    .podcast-mode-content.active {
+    .conversation-mode-content.active {
         display: block;
     }
 
@@ -912,24 +902,6 @@
         align-items: center;
     }
 
-    .theme-random-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 0 16px;
-        height: 40px;
-        background-color: white;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius);
-        cursor: pointer;
-        transition: background-color 0.2s;
-        font-size: 14px;
-    }
-
-    .theme-random-btn:hover {
-        background-color: var(--light-gray);
-    }
-
     .theme-generate-btn {
         padding: 0 24px;
         height: 40px;
@@ -954,90 +926,219 @@
 
     /* Generated script preview */
     .generated-script-preview {
-        margin-top: 24px;
-        padding: 20px;
-        background-color: var(--light-gray);
-        border-radius: var(--radius);
-        border: 1px solid var(--border-color);
+        margin-top: 32px;
+        padding: 28px;
+        background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+        border-radius: 12px;
+        border: 3px solid #4f46e5;
+        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.15);
+        animation: slideIn 0.3s ease-out;
+        position: relative;
+    }
+
+    .generated-script-preview::before {
+        content: "✨ Generated Script - Review Before Creating Audio";
+        position: absolute;
+        top: -10px;
+        left: 20px;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .generated-script-preview h4 {
-        margin: 0 0 16px 0;
-        color: var(--text-color);
-        font-size: 16px;
+        margin: 0 0 20px 0;
+        color: var(--primary-color);
+        font-size: 20px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .generated-script-preview h4::before {
+        content: "✨";
+        font-size: 18px;
     }
 
     .script-lines-preview {
-        max-height: 300px;
+        max-height: 400px;
         overflow-y: auto;
-        margin-bottom: 16px;
+        margin-bottom: 24px;
+        padding: 4px;
+        border-radius: 8px;
     }
 
     .preview-line {
         display: flex;
-        margin-bottom: 12px;
-        padding: 8px;
+        margin-bottom: 16px;
+        padding: 16px;
         background-color: white;
-        border-radius: 4px;
-        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+        animation: fadeInUp 0.4s ease-out;
+    }
+
+    .preview-line:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .preview-speaker {
-        width: 100px;
-        font-weight: 500;
-        margin-right: 12px;
+        width: 120px;
+        font-weight: 600;
+        margin-right: 16px;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
     }
 
     .preview-speaker.speaker-1 {
-        color: #3b82f6;
+        color: #2563eb;
+    }
+
+    .preview-speaker.speaker-1::before {
+        content: "👤";
+        font-size: 16px;
     }
 
     .preview-speaker.speaker-2 {
-        color: #ef4444;
+        color: #dc2626;
+    }
+
+    .preview-speaker.speaker-2::before {
+        content: "👥";
+        font-size: 16px;
     }
 
     .preview-text {
         flex: 1;
-        line-height: 1.4;
+        line-height: 1.6;
+        color: #374151;
+        font-size: 15px;
     }
 
     .script-actions {
         display: flex;
-        gap: 12px;
+        gap: 16px;
+        justify-content: center;
+        padding-top: 24px;
+        border-top: 2px solid #e5e7eb;
+        margin-top: 24px;
     }
 
     .edit-script-btn,
     .generate-audio-btn {
-        padding: 8px 16px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius);
+        padding: 14px 32px;
+        border-radius: 8px;
         cursor: pointer;
-        font-size: 14px;
-        transition: background-color 0.2s;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        min-width: 160px;
+        justify-content: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .edit-script-btn {
         background-color: white;
-        color: var(--text-color);
+        color: #6b7280;
+        border: 2px solid #d1d5db;
     }
 
     .edit-script-btn:hover {
-        background-color: var(--light-gray);
+        background-color: #f9fafb;
+        border-color: #9ca3af;
+        color: #374151;
+        transform: translateY(-1px);
+    }
+
+    .edit-script-btn::before {
+        content: "✏️";
     }
 
     .generate-audio-btn {
-        background-color: var(--primary-color);
+        background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
         color: white;
-        border-color: var(--primary-color);
+        border: 2px solid transparent;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        animation: pulse 2s infinite;
     }
 
     .generate-audio-btn:hover {
-        background-color: #4038c7;
+        background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+        animation: none;
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        50% {
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+        }
+
+        100% {
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+    }
+
+    .generate-audio-btn::before {
+        content: "�️";
     }
 
     /* Original script-based UI styles */
-    .podcast-controls {
+    .conversation-controls {
         display: flex;
         gap: 12px;
         margin-bottom: 24px;
@@ -1060,7 +1161,7 @@
         background-color: var(--light-gray);
     }
 
-    .podcast-synth-btn {
+    .conversation-synth-btn {
         padding: 0 24px;
         height: 40px;
         background-color: var(--primary-color);
@@ -1072,23 +1173,23 @@
         transition: background-color 0.2s;
     }
 
-    .podcast-synth-btn:hover {
+    .conversation-synth-btn:hover {
         background-color: #4038c7;
     }
 
-    .podcast-script-container {
+    .conversation-script-container {
         border: 1px solid var(--border-color);
         border-radius: var(--radius);
         overflow: hidden;
         margin-bottom: 24px;
     }
 
-    .podcast-lines {
+    .conversation-lines {
         max-height: 500px;
         overflow-y: auto;
     }
 
-    .podcast-line {
+    .conversation-line {
         display: flex;
         border-bottom: 1px solid var(--border-color);
     }
@@ -1159,7 +1260,7 @@
         background-color: rgba(80, 70, 229, 0.1);
     }
 
-    .podcast-keyboard-hint {
+    .conversation-keyboard-hint {
         padding: 10px;
         text-align: center;
         background-color: var(--light-gray);
@@ -1168,24 +1269,24 @@
         font-size: 13px;
     }
 
-    .podcast-player {
+    .conversation-player {
         border: 1px solid var(--border-color);
         border-radius: var(--radius);
         padding: 20px;
         margin-bottom: 24px;
     }
 
-    .podcast-wave-player {
+    .conversation-wave-player {
         margin: 20px 0;
     }
 
-    .podcast-transcript-container {
+    .conversation-transcript-container {
         margin-top: 20px;
         padding-top: 20px;
         border-top: 1px solid var(--border-color);
     }
 
-    .podcast-transcript {
+    .conversation-transcript {
         margin-top: 12px;
         line-height: 1.6;
     }
@@ -1207,14 +1308,14 @@
         color: #ef4444;
     }
 
-    /* Responsive styles for podcast UI */
+    /* Responsive styles for conversation UI */
     @media (max-width: 768px) {
-        .podcast-controls {
+        .conversation-controls {
             flex-direction: column;
         }
 
         .random-script-btn,
-        .podcast-synth-btn {
+        .conversation-synth-btn {
             width: 100%;
             height: 48px;
         }
@@ -1243,25 +1344,52 @@
         .edit-script-btn,
         .generate-audio-btn {
             width: 100%;
+            padding: 14px;
+            font-size: 16px;
+        }
+
+        .preview-line {
+            flex-direction: column;
             padding: 12px;
         }
 
-        .podcast-mode-tabs {
+        .preview-speaker {
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .preview-text {
+            font-size: 14px;
+        }
+
+        .generated-script-preview {
+            margin-top: 20px;
+            padding: 20px 16px;
+        }
+
+        .generated-script-preview h4 {
+            font-size: 18px;
+        }
+
+        .conversation-mode-tabs {
             margin-bottom: 16px;
         }
 
-        .podcast-mode-tab {
+        .conversation-mode-tab {
             padding: 12px 16px;
             font-size: 14px;
         }
 
-        /* Stack podcast players vertically on mobile */
-        .podcast-player-container .players-row {
+        /* Stack conversation players vertically on mobile */
+        .conversation-player-container .players-row {
             flex-direction: column;
             gap: 16px;
         }
 
-        .podcast-line {
+        .conversation-line {
             flex-direction: column;
             padding-bottom: 0;
             margin-bottom: 0;
@@ -1291,7 +1419,7 @@
             height: 30px;
         }
 
-        .podcast-line {
+        .conversation-line {
             position: relative;
         }
 
@@ -1300,10 +1428,14 @@
             .remove-line-btn {
                 background-color: rgba(50, 50, 60, 0.7);
             }
+
+            .preview-speaker {
+                border-bottom-color: var(--border-color);
+            }
         }
     }
 
-    /* Dark mode styles for podcast UI */
+    /* Dark mode styles for conversation UI */
     @media (prefers-color-scheme: dark) {
         .random-script-btn {
             background-color: var(--light-gray);
@@ -1327,13 +1459,13 @@
         }
 
         /* Theme generation dark mode */
-        .podcast-mode-tab {
+        .conversation-mode-tab {
             background-color: var(--light-gray);
             color: var(--text-color);
             border-color: var(--border-color);
         }
 
-        .podcast-mode-tab.active {
+        .conversation-mode-tab.active {
             background-color: var(--light-gray);
             color: var(--primary-color);
         }
@@ -1369,13 +1501,22 @@
         }
 
         .generated-script-preview {
-            background-color: var(--light-gray);
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
             border-color: var(--border-color);
         }
 
         .preview-line {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: var(--light-gray);
             border-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .preview-line:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .preview-text {
+            color: var(--text-color);
         }
 
         .edit-script-btn {
@@ -1393,7 +1534,7 @@
         }
     }
 
-    .podcast-loading-container {
+    .conversation-loading-container {
         display: flex;
         justify-content: center;
         align-items: center;
@@ -1407,12 +1548,12 @@
     }
 
     @media (prefers-color-scheme: dark) {
-        .podcast-loading-container {
+        .conversation-loading-container {
             background-color: rgba(18, 18, 24, 0.9);
         }
     }
 
-    .podcast-vote-results {
+    .conversation-vote-results {
         background-color: #f0f4ff;
         border: 1px solid #d0d7f7;
         border-radius: var(--radius);
@@ -1420,12 +1561,12 @@
         margin: 24px 0;
     }
 
-    .podcast-next-round-container {
+    .conversation-next-round-container {
         margin-top: 24px;
         text-align: center;
     }
 
-    .podcast-next-round-btn {
+    .conversation-next-round-btn {
         padding: 12px 24px;
         background-color: var(--primary-color);
         color: white;
@@ -1439,13 +1580,13 @@
         transition: background-color 0.2s;
     }
 
-    .podcast-next-round-btn:hover {
+    .conversation-next-round-btn:hover {
         background-color: #4038c7;
     }
 
     /* Dark mode adjustments */
     @media (prefers-color-scheme: dark) {
-        .podcast-vote-results {
+        .conversation-vote-results {
             background-color: var(--light-gray);
             border-color: var(--border-color);
         }
@@ -1481,6 +1622,15 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+    // Configuration data from server
+    window.CONFIG = {
+        LENGTH_OPTIONS: {{ length_options | tojson | safe }},
+    STYLE_OPTIONS: { { style_options | tojson | safe } },
+    LENGTH_KEYS: { { length_options.keys() | list | tojson | safe } },
+    STYLE_KEYS: { { style_options.keys() | list | tojson | safe } }
+    };
+</script>
 <script src="{{ url_for('static', filename='js/waveplayer.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -1932,26 +2082,26 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Variables for podcast UI
-        const podcastContainer = document.querySelector('.podcast-container');
-        const podcastLinesContainer = document.querySelector('.podcast-lines');
+        // Variables for conversation UI
+        const conversationContainer = document.querySelector('.conversation-container');
+        const conversationLinesContainer = document.querySelector('.conversation-lines');
         const addLineBtn = document.querySelector('.add-line-btn');
         const randomScriptBtn = document.querySelector('.random-script-btn');
-        const podcastSynthBtn = document.querySelector('.podcast-synth-btn');
-        const podcastLoadingContainer = document.querySelector('.podcast-loading-container');
-        const podcastPlayerContainer = document.querySelector('.podcast-player-container');
-        const podcastWavePlayerA = document.querySelector('.podcast-wave-player-a');
-        const podcastWavePlayerB = document.querySelector('.podcast-wave-player-b');
-        const podcastVoteButtons = document.querySelectorAll('#conversational-tab .vote-btn');
-        const podcastVoteResults = document.querySelector('.podcast-vote-results');
-        const podcastNextRoundContainer = document.querySelector('.podcast-next-round-container');
-        const podcastNextRoundBtn = document.querySelector('.podcast-next-round-btn');
-        const chosenModelNameElement = document.querySelector('.podcast-vote-results .chosen-model-name');
-        const rejectedModelNameElement = document.querySelector('.podcast-vote-results .rejected-model-name');
+        const conversationSynthBtn = document.querySelector('.conversation-synth-btn');
+        const conversationLoadingContainer = document.querySelector('.conversation-loading-container');
+        const conversationPlayerContainer = document.querySelector('.conversation-player-container');
+        const conversationWavePlayerA = document.querySelector('.conversation-wave-player-a');
+        const conversationWavePlayerB = document.querySelector('.conversation-wave-player-b');
+        const conversationVoteButtons = document.querySelectorAll('#conversational-tab .vote-btn');
+        const conversationVoteResults = document.querySelector('.conversation-vote-results');
+        const conversationNextRoundContainer = document.querySelector('.conversation-next-round-container');
+        const conversationNextRoundBtn = document.querySelector('.conversation-next-round-btn');
+        const chosenModelNameElement = document.querySelector('.conversation-vote-results .chosen-model-name');
+        const rejectedModelNameElement = document.querySelector('.conversation-vote-results .rejected-model-name');
 
         // New variables for LLM theme-based generation
-        const podcastModeTabs = document.querySelectorAll('.podcast-mode-tab');
-        const podcastModeContents = document.querySelectorAll('.podcast-mode-content');
+        const conversationModeTabs = document.querySelectorAll('.conversation-mode-tab');
+        const conversationModeContents = document.querySelectorAll('.conversation-mode-content');
         const themeInput = document.getElementById('theme-input');
         const keywordsInput = document.getElementById('keywords-input');
         const lengthSelect = document.getElementById('length-select');
@@ -1963,74 +2113,20 @@
         const editScriptBtn = document.querySelector('.edit-script-btn');
         const generateAudioBtn = document.querySelector('.generate-audio-btn');
 
-        let podcastWavePlayers = { a: null, b: null };
-        let bothPodcastSamplesPlayed = false;
-        let currentPodcastSessionId = null;
-        let podcastModelNames = { a: 'Model A', b: 'Model B' };
+        let conversationWavePlayers = { a: null, b: null };
+        let bothConversationSamplesPlayed = false;
+        let currentConversationSessionId = null;
+        let conversationModelNames = { a: 'Model A', b: 'Model B' };
         let currentGeneratedScript = null;
 
-        // Sample random themes for LLM generation
-        const randomThemes = [
-            {
-                theme: "The future of artificial intelligence in healthcare",
-                keywords: ["machine learning", "medical diagnosis", "patient care", "ethics"],
-                style: "podcast"
-            },
-            {
-                theme: "Climate change and sustainable technology solutions",
-                keywords: ["renewable energy", "carbon footprint", "green innovation", "environmental policy"],
-                style: "interview"
-            },
-            {
-                theme: "The evolution of remote work and digital nomadism",
-                keywords: ["work-life balance", "productivity", "global workforce", "technology"],
-                style: "casual"
-            },
-            {
-                theme: "Cryptocurrency and the future of digital finance",
-                keywords: ["blockchain", "decentralization", "digital currency", "financial innovation"],
-                style: "debate"
-            },
-            {
-                theme: "Space exploration and commercial space travel",
-                keywords: ["Mars mission", "SpaceX", "space tourism", "colonization"],
-                style: "podcast"
-            },
-            {
-                theme: "Mental health awareness in the digital age",
-                keywords: ["social media", "digital wellness", "therapy", "mindfulness"],
-                style: "educational"
-            },
-            {
-                theme: "The impact of social media on modern society",
-                keywords: ["digital communication", "privacy", "misinformation", "community"],
-                style: "news"
-            },
-            {
-                theme: "Sustainable fashion and ethical consumption",
-                keywords: ["fast fashion", "circular economy", "ethical brands", "environmental impact"],
-                style: "interview"
-            },
-            {
-                theme: "The future of transportation and autonomous vehicles",
-                keywords: ["self-driving cars", "electric vehicles", "urban planning", "safety"],
-                style: "podcast"
-            },
-            {
-                theme: "Gaming industry trends and esports phenomenon",
-                keywords: ["competitive gaming", "streaming", "virtual reality", "entertainment"],
-                style: "casual"
-            }
-        ];
-
         // Mode tab switching functionality
-        podcastModeTabs.forEach(tab => {
+        conversationModeTabs.forEach(tab => {
             tab.addEventListener('click', function () {
                 const mode = this.dataset.mode;
 
                 // Remove active class from all tabs and contents
-                podcastModeTabs.forEach(t => t.classList.remove('active'));
-                podcastModeContents.forEach(c => c.classList.remove('active'));
+                conversationModeTabs.forEach(t => t.classList.remove('active'));
+                conversationModeContents.forEach(c => c.classList.remove('active'));
 
                 // Add active class to clicked tab and corresponding content
                 this.classList.add('active');
@@ -2040,33 +2136,15 @@
                 }
 
                 // Reset states when switching modes
-                resetPodcastState();
+                resetConversationState();
                 if (mode === 'script') {
                     // If switching to script mode, ensure we have some lines
-                    if (podcastLinesContainer && podcastLinesContainer.querySelectorAll('.podcast-line').length === 0) {
-                        initializePodcastLines();
+                    if (conversationLinesContainer && conversationLinesContainer.querySelectorAll('.conversation-line').length === 0) {
+                        initializeConversationLines();
                     }
                 }
             });
         });
-
-        // Theme random button functionality
-        if (themeRandomBtn) {
-            themeRandomBtn.addEventListener('click', function () {
-                const randomTheme = randomThemes[Math.floor(Math.random() * randomThemes.length)];
-
-                themeInput.value = randomTheme.theme;
-                keywordsInput.value = randomTheme.keywords.join(', ');
-                styleSelect.value = randomTheme.style;
-
-                // Optional: randomize length too
-                const lengths = ['short', 'medium', 'long'];
-                lengthSelect.value = lengths[Math.floor(Math.random() * lengths.length)];
-
-                // Show success message
-                openToast('Random theme loaded!', 'success');
-            });
-        }
 
         // Theme generate button functionality
         if (themeGenerateBtn) {
@@ -2088,9 +2166,17 @@
                 return;
             }
 
+            // Hide any existing preview first
+            generatedScriptPreview.style.display = 'none';
+
             // Disable generate button during generation
             themeGenerateBtn.disabled = true;
-            themeGenerateBtn.textContent = 'Generating...';
+            themeGenerateBtn.innerHTML = `
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 16px; height: 16px; border: 2px solid transparent; border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                    Generating...
+                </span>
+            `;
 
             // Parse keywords
             const keywordsArray = keywords ? keywords.split(',').map(k => k.trim()).filter(k => k.length > 0) : [];
@@ -2117,17 +2203,37 @@
                     return response.json();
                 })
                 .then(data => {
+                    // Validate response structure
+                    if (!data.generated_script || !Array.isArray(data.generated_script)) {
+                        throw new Error('Invalid response format: missing or invalid generated_script');
+                    }
+
                     // Store the generated script
                     currentGeneratedScript = data.generated_script;
 
                     // Display the script preview
                     displayGeneratedScript(data.generated_script);
 
-                    // Show the preview container
+                    // Show the preview container with smooth reveal
                     generatedScriptPreview.style.display = 'block';
+                    generatedScriptPreview.style.opacity = '0';
+                    generatedScriptPreview.style.transform = 'translateY(20px)';
 
-                    // Success message
-                    openToast('Conversation generated successfully!', 'success');
+                    setTimeout(() => {
+                        generatedScriptPreview.style.transition = 'all 0.5s ease-out';
+                        generatedScriptPreview.style.opacity = '1';
+                        generatedScriptPreview.style.transform = 'translateY(0)';
+                        // Ensure the preview is in view with a small delay
+                        setTimeout(() => {
+                            generatedScriptPreview.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                        }, 300);
+                    }, 100);
+
+                    // Success message with celebration
+                    openToast('🎉 Script generated! Please review it below and click "Generate TTS Audio" when ready.', 'success');
                 })
                 .catch(error => {
                     openToast(error.message, 'error');
@@ -2136,7 +2242,11 @@
                 .finally(() => {
                     // Re-enable generate button
                     themeGenerateBtn.disabled = false;
-                    themeGenerateBtn.textContent = 'Generate Conversation';
+                    themeGenerateBtn.innerHTML = `
+                        <span style="display: flex; align-items: center; gap: 8px;">
+                            Generate Conversation
+                        </span>
+                    `;
                 });
         }
 
@@ -2144,18 +2254,44 @@
         function displayGeneratedScript(script) {
             scriptLinesPreview.innerHTML = '';
 
-            script.forEach(line => {
-                const lineElement = document.createElement('div');
-                lineElement.className = 'preview-line';
+            if (!script || script.length === 0) {
+                return;
+            }
 
-                const speakerNum = line.speaker_id === 0 ? 1 : 2;
-                lineElement.innerHTML = `
-                    <div class="preview-speaker speaker-${speakerNum}">Speaker ${speakerNum}</div>
-                    <div class="preview-text">${escapeHtml(line.text)}</div>
-                `;
+            // Add each line with staggered animation
+            script.forEach((line, index) => {
+                setTimeout(() => {
+                    const lineElement = document.createElement('div');
+                    lineElement.className = 'preview-line';
 
-                scriptLinesPreview.appendChild(lineElement);
+                    // Set initial opacity to 0 for animation
+                    lineElement.style.opacity = '0';
+                    lineElement.style.transform = 'translateY(20px)';
+
+                    const speakerNum = line.speaker_id === 0 ? 1 : 2;
+                    lineElement.innerHTML = `
+                        <div class="preview-speaker speaker-${speakerNum}">Speaker ${speakerNum}</div>
+                        <div class="preview-text">${escapeHtml(line.text)}</div>
+                    `;
+
+                    scriptLinesPreview.appendChild(lineElement);
+
+                    // Animate in
+                    setTimeout(() => {
+                        lineElement.style.transition = 'all 0.4s ease-out';
+                        lineElement.style.opacity = '1';
+                        lineElement.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 100); // Stagger by 100ms per line
             });
+
+            // Scroll to the preview after all lines are added
+            setTimeout(() => {
+                generatedScriptPreview.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, script.length * 100 + 200);
         }
 
         // Escape HTML to prevent XSS
@@ -2171,22 +2307,22 @@
                 if (!currentGeneratedScript) return;
 
                 // Switch to script mode
-                podcastModeTabs.forEach(t => t.classList.remove('active'));
-                podcastModeContents.forEach(c => c.classList.remove('active'));
+                conversationModeTabs.forEach(t => t.classList.remove('active'));
+                conversationModeContents.forEach(c => c.classList.remove('active'));
 
-                const scriptTab = document.querySelector('.podcast-mode-tab[data-mode="script"]');
+                const scriptTab = document.querySelector('.conversation-mode-tab[data-mode="script"]');
                 const scriptMode = document.getElementById('script-mode');
                 if (scriptTab) scriptTab.classList.add('active');
                 if (scriptMode) scriptMode.classList.add('active');
 
                 // Clear existing lines
-                if (podcastLinesContainer) {
-                    podcastLinesContainer.innerHTML = '';
+                if (conversationLinesContainer) {
+                    conversationLinesContainer.innerHTML = '';
 
                     // Add each line from the generated script
                     currentGeneratedScript.forEach(line => {
                         const speakerNum = line.speaker_id === 0 ? 1 : 2;
-                        const lineElement = addPodcastLine(speakerNum);
+                        const lineElement = addConversationLine(speakerNum);
                         lineElement.querySelector('.line-input').value = line.text;
                     });
                 }
@@ -2199,13 +2335,11 @@
         // Generate audio button functionality
         if (generateAudioBtn) {
             generateAudioBtn.addEventListener('click', function () {
-                if (!currentGeneratedScript) return;
-                generatePodcastFromScript(currentGeneratedScript);
+                generateConversationFromScript(currentGeneratedScript);
             });
-        }
 
-        // Generate podcast from script (unified function)
-        function generatePodcastFromScript(script) {
+        // Generate conversation from script (unified function)
+        function generateConversationFromScript(script) {
             // Validate that we have at least 2 lines with content
             if (script.length < 2) {
                 openToast("Script must have at least 2 lines", "warning");
@@ -2213,29 +2347,29 @@
             }
 
             // Reset vote buttons and hide results
-            podcastVoteButtons.forEach(btn => {
+            conversationVoteButtons.forEach(btn => {
                 btn.disabled = true;
                 btn.classList.remove('selected');
                 btn.querySelector('.vote-loader').style.display = 'none';
             });
 
             // Clear model name displays
-            const modelNameDisplays = podcastPlayerContainer.querySelectorAll('.model-name-display');
+            const modelNameDisplays = conversationPlayerContainer.querySelectorAll('.model-name-display');
             modelNameDisplays.forEach(display => {
                 display.textContent = '';
             });
 
-            podcastVoteResults.style.display = 'none';
-            podcastNextRoundContainer.style.display = 'none';
+            conversationVoteResults.style.display = 'none';
+            conversationNextRoundContainer.style.display = 'none';
 
             // Reset the flag for both samples played
-            bothPodcastSamplesPlayed = false;
+            bothConversationSamplesPlayed = false;
 
             // Show loading animation
-            podcastLoadingContainer.style.display = 'flex';
-            podcastPlayerContainer.style.display = 'none';
+            conversationLoadingContainer.style.display = 'flex';
+            conversationPlayerContainer.style.display = 'none';
 
-            // Call API to generate podcast
+            // Call API to generate conversation
             fetch('/api/conversational/generate', {
                 method: 'POST',
                 headers: {
@@ -2246,98 +2380,96 @@
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(err => {
-                            throw new Error(err.error || 'Failed to generate podcast');
+                            throw new Error(err.error || 'Failed to generate conversation');
                         });
                     }
                     return response.json();
                 })
                 .then(data => {
-                    currentPodcastSessionId = data.session_id;
+                    currentConversationSessionId = data.session_id;
 
                     // Hide loading
-                    podcastLoadingContainer.style.display = 'none';
+                    conversationLoadingContainer.style.display = 'none';
 
                     // Show player
-                    podcastPlayerContainer.style.display = 'block';
+                    conversationPlayerContainer.style.display = 'block';
 
                     // Initialize WavePlayers if not already done
-                    if (!podcastWavePlayers.a) {
-                        podcastWavePlayers.a = new WavePlayer(podcastWavePlayerA, {
+                    if (!conversationWavePlayers.a) {
+                        conversationWavePlayers.a = new WavePlayer(conversationWavePlayerA, {
                             backend: 'MediaElement',
                             mediaControls: false
                         });
-                        podcastWavePlayers.b = new WavePlayer(podcastWavePlayerB, {
+                        conversationWavePlayers.b = new WavePlayer(conversationWavePlayerB, {
                             backend: 'MediaElement',
                             mediaControls: false
                         });
 
-                        podcastWavePlayers.a.loadAudio(data.audio_a);
-                        podcastWavePlayers.b.loadAudio(data.audio_b);
+                        conversationWavePlayers.a.loadAudio(data.audio_a);
+                        conversationWavePlayers.b.loadAudio(data.audio_b);
 
                         setTimeout(() => {
-                            if (podcastWavePlayers.a && podcastWavePlayers.a.hideLoading) {
-                                podcastWavePlayers.a.hideLoading();
+                            if (conversationWavePlayers.a && conversationWavePlayers.a.hideLoading) {
+                                conversationWavePlayers.a.hideLoading();
                             }
-                            if (podcastWavePlayers.b && podcastWavePlayers.b.hideLoading) {
-                                podcastWavePlayers.b.hideLoading();
+                            if (conversationWavePlayers.b && conversationWavePlayers.b.hideLoading) {
+                                conversationWavePlayers.b.hideLoading();
                             }
                         }, 5000);
                     } else {
                         try {
-                            podcastWavePlayers.a.wavesurfer.empty();
-                            podcastWavePlayers.b.wavesurfer.empty();
+                            conversationWavePlayers.a.wavesurfer.empty();
+                            conversationWavePlayers.b.wavesurfer.empty();
 
-                            podcastWavePlayers.a.hideLoading();
-                            podcastWavePlayers.b.hideLoading();
+                            conversationWavePlayers.a.hideLoading();
+                            conversationWavePlayers.b.hideLoading();
 
-                            podcastWavePlayers.a.loadAudio(data.audio_a);
-                            podcastWavePlayers.b.loadAudio(data.audio_b);
+                            conversationWavePlayers.a.loadAudio(data.audio_a);
+                            conversationWavePlayers.b.loadAudio(data.audio_b);
 
                             setTimeout(() => {
-                                if (podcastWavePlayers.a && podcastWavePlayers.a.hideLoading) {
-                                    podcastWavePlayers.a.hideLoading();
+                                if (conversationWavePlayers.a && conversationWavePlayers.a.hideLoading) {
+                                    conversationWavePlayers.a.hideLoading();
                                 }
-                                if (podcastWavePlayers.b && podcastWavePlayers.b.hideLoading) {
-                                    podcastWavePlayers.b.hideLoading();
+                                if (conversationWavePlayers.b && conversationWavePlayers.b.hideLoading) {
+                                    conversationWavePlayers.b.hideLoading();
                                 }
                             }, 5000);
                         } catch (err) {
-                            console.error('Error resetting podcast waveplayers:', err);
-
-                            podcastWavePlayers.a = new WavePlayer(podcastWavePlayerA, {
+                            conversationWavePlayers.a = new WavePlayer(conversationWavePlayerA, {
                                 backend: 'MediaElement',
                                 mediaControls: false
                             });
-                            podcastWavePlayers.b = new WavePlayer(podcastWavePlayerB, {
+                            conversationWavePlayers.b = new WavePlayer(conversationWavePlayerB, {
                                 backend: 'MediaElement',
                                 mediaControls: false
                             });
 
-                            podcastWavePlayers.a.loadAudio(data.audio_a);
-                            podcastWavePlayers.b.loadAudio(data.audio_b);
+                            conversationWavePlayers.a.loadAudio(data.audio_a);
+                            conversationWavePlayers.b.loadAudio(data.audio_b);
 
                             setTimeout(() => {
-                                if (podcastWavePlayers.a && podcastWavePlayers.a.hideLoading) {
-                                    podcastWavePlayers.a.hideLoading();
+                                if (conversationWavePlayers.a && conversationWavePlayers.a.hideLoading) {
+                                    conversationWavePlayers.a.hideLoading();
                                 }
-                                if (podcastWavePlayers.b && podcastWavePlayers.b.hideLoading) {
-                                    podcastWavePlayers.b.hideLoading();
+                                if (conversationWavePlayers.b && conversationWavePlayers.b.hideLoading) {
+                                    conversationWavePlayers.b.hideLoading();
                                 }
                             }, 5000);
                         }
                     }
 
                     // Setup automatic sequential playback
-                    podcastWavePlayers.a.wavesurfer.once('ready', function () {
-                        podcastWavePlayers.a.play();
+                    conversationWavePlayers.a.wavesurfer.once('ready', function () {
+                        conversationWavePlayers.a.play();
 
-                        podcastWavePlayers.a.wavesurfer.once('finish', function () {
+                        conversationWavePlayers.a.wavesurfer.once('finish', function () {
                             setTimeout(() => {
-                                podcastWavePlayers.b.play();
+                                conversationWavePlayers.b.play();
 
-                                podcastWavePlayers.b.wavesurfer.once('finish', function () {
-                                    bothPodcastSamplesPlayed = true;
-                                    podcastVoteButtons.forEach(btn => {
+                                conversationWavePlayers.b.wavesurfer.once('finish', function () {
+                                    bothConversationSamplesPlayed = true;
+                                    conversationVoteButtons.forEach(btn => {
                                         btn.disabled = false;
                                     });
                                 });
@@ -2349,16 +2481,16 @@
                     generatedScriptPreview.style.display = 'none';
                 })
                 .catch(error => {
-                    podcastLoadingContainer.style.display = 'none';
+                    conversationLoadingContainer.style.display = 'none';
                     openToast(error.message, "error");
                     console.error('Error:', error);
                 });
         }
 
-        // Sample random scripts for the podcast
+        // Sample random scripts for the conversation
         const randomScripts = [
             [
-                { speaker: 1, text: "Welcome to our podcast about artificial intelligence. Today we're discussing the latest advances in text-to-speech technology." },
+                { speaker: 1, text: "Welcome to our conversation about artificial intelligence. Today we're discussing the latest advances in text-to-speech technology." },
                 { speaker: 2, text: "That's right! Text-to-speech has come a long way in recent years. The voices sound increasingly natural." },
                 { speaker: 1, text: "What do you think are the most impressive recent developments?" },
                 { speaker: 2, text: "I'd say the emotion and inflection that modern TTS systems can convey is truly remarkable." }
@@ -2444,15 +2576,15 @@
         ];
 
         // Initialize with 2 empty lines
-        function initializePodcastLines() {
-            podcastLinesContainer.innerHTML = '';
-            addPodcastLine(1);
-            addPodcastLine(2);
+        function initializeConversationLines() {
+            conversationLinesContainer.innerHTML = '';
+            addConversationLine(1);
+            addConversationLine(2);
         }
 
-        // Add a new podcast line
-        function addPodcastLine(speakerNum = null) {
-            const lineCount = podcastLinesContainer.querySelectorAll('.podcast-line').length;
+        // Add a new conversation line
+        function addConversationLine(speakerNum = null) {
+            const lineCount = conversationLinesContainer.querySelectorAll('.conversation-line').length;
 
             // If speaker number isn't specified, alternate between 1 and 2
             if (speakerNum === null) {
@@ -2460,7 +2592,7 @@
             }
 
             const lineElement = document.createElement('div');
-            lineElement.className = 'podcast-line';
+            lineElement.className = 'conversation-line';
 
             lineElement.innerHTML = `
                 <div class="speaker-label speaker-${speakerNum}">Speaker ${speakerNum}</div>
@@ -2474,13 +2606,13 @@
                 </button>
             `;
 
-            podcastLinesContainer.appendChild(lineElement);
+            conversationLinesContainer.appendChild(lineElement);
 
             // Add event listener to remove button
             const removeBtn = lineElement.querySelector('.remove-line-btn');
             removeBtn.addEventListener('click', function () {
                 // Don't allow removing if there are only 2 lines
-                if (podcastLinesContainer.querySelectorAll('.podcast-line').length > 2) {
+                if (conversationLinesContainer.querySelectorAll('.conversation-line').length > 2) {
                     lineElement.remove();
                 } else {
                     openToast("At least 2 lines are required", "warning");
@@ -2493,11 +2625,11 @@
                 // Alt+Enter or Ctrl+Enter to add new line
                 if (e.key === 'Enter' && (e.altKey || e.ctrlKey)) {
                     e.preventDefault();
-                    addPodcastLine();
+                    addConversationLine();
 
                     // Focus the new line's input field
                     setTimeout(() => {
-                        const inputs = podcastLinesContainer.querySelectorAll('.line-input');
+                        const inputs = conversationLinesContainer.querySelectorAll('.line-input');
                         inputs[inputs.length - 1].focus();
                     }, 10);
                 }
@@ -2509,23 +2641,23 @@
         // Load a random script
         function loadRandomScript() {
             // Clear existing lines
-            podcastLinesContainer.innerHTML = '';
+            conversationLinesContainer.innerHTML = '';
 
             // Select a random script
             const randomScript = randomScripts[Math.floor(Math.random() * randomScripts.length)];
 
             // Add each line from the script
             randomScript.forEach(line => {
-                const lineElement = addPodcastLine(line.speaker);
+                const lineElement = addConversationLine(line.speaker);
                 lineElement.querySelector('.line-input').value = line.text;
             });
         }
 
-        // Generate podcast (updated to use unified function)
-        function generatePodcast() {
+        // Generate conversation (updated to use unified function)
+        function generateConversation() {
             // Get all lines from script mode
             const lines = [];
-            podcastLinesContainer.querySelectorAll('.podcast-line').forEach(line => {
+            conversationLinesContainer.querySelectorAll('.conversation-line').forEach(line => {
                 const speaker_id = line.querySelector('.speaker-label').textContent.includes('1') ? 0 : 1;
                 const text = line.querySelector('.line-input').value.trim();
 
@@ -2534,13 +2666,13 @@
                 }
             });
 
-            generatePodcastFromScript(lines);
+            generateConversationFromScript(lines);
         }
 
-        // Handle vote for a podcast model
-        function handlePodcastVote(model) {
+        // Handle vote for a conversation model
+        function handleConversationVote(model) {
             // Disable all vote buttons
-            podcastVoteButtons.forEach(btn => {
+            conversationVoteButtons.forEach(btn => {
                 btn.disabled = true;
                 if (btn.dataset.model === model) {
                     btn.querySelector('.vote-loader').style.display = 'flex';
@@ -2554,7 +2686,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    session_id: currentPodcastSessionId,
+                    session_id: currentConversationSessionId,
                     chosen_model: model
                 }),
             })
@@ -2568,7 +2700,7 @@
                 })
                 .then(data => {
                     // Hide loaders
-                    podcastVoteButtons.forEach(btn => {
+                    conversationVoteButtons.forEach(btn => {
                         btn.querySelector('.vote-loader').style.display = 'none';
                         // Highlight the selected button
                         if (btn.dataset.model === model) {
@@ -2577,11 +2709,11 @@
                     });
 
                     // Store model names from vote response
-                    podcastModelNames.a = data.names.a;
-                    podcastModelNames.b = data.names.b;
+                    conversationModelNames.a = data.names.a;
+                    conversationModelNames.b = data.names.b;
 
                     // Show model names after voting
-                    const modelNameDisplays = podcastPlayerContainer.querySelectorAll('.model-name-display');
+                    const modelNameDisplays = conversationPlayerContainer.querySelectorAll('.model-name-display');
                     modelNameDisplays[0].textContent = data.names.a ? `(${data.names.a})` : '';
                     modelNameDisplays[1].textContent = data.names.b ? `(${data.names.b})` : '';
 
@@ -2593,17 +2725,17 @@
                         chosenModelNameElement.textContent = data.chosen_model.name;
                         rejectedModelNameElement.textContent = data.rejected_model.name;
                     }
-                    podcastVoteResults.style.display = 'block';
+                    conversationVoteResults.style.display = 'block';
 
                     // Show next round button
-                    podcastNextRoundContainer.style.display = 'block';
+                    conversationNextRoundContainer.style.display = 'block';
 
                     // Show success toast
                     openToast('Vote recorded successfully!', 'success');
                 })
                 .catch(error => {
                     // Re-enable vote buttons
-                    podcastVoteButtons.forEach(btn => {
+                    conversationVoteButtons.forEach(btn => {
                         btn.disabled = false;
                         btn.querySelector('.vote-loader').style.display = 'none';
                     });
@@ -2614,35 +2746,35 @@
                 });
         }
 
-        // Reset podcast UI to initial state
-        function resetPodcastState() {
+        // Reset conversation UI to initial state
+        function resetConversationState() {
             // Hide players, results, and next round button
-            podcastPlayerContainer.style.display = 'none';
-            podcastVoteResults.style.display = 'none';
-            podcastNextRoundContainer.style.display = 'none';
+            conversationPlayerContainer.style.display = 'none';
+            conversationVoteResults.style.display = 'none';
+            conversationNextRoundContainer.style.display = 'none';
 
             // Reset vote buttons
-            podcastVoteButtons.forEach(btn => {
+            conversationVoteButtons.forEach(btn => {
                 btn.disabled = true;
                 btn.classList.remove('selected');
                 btn.querySelector('.vote-loader').style.display = 'none';
             });
 
             // Clear model name displays
-            const modelNameDisplays = podcastPlayerContainer.querySelectorAll('.model-name-display');
+            const modelNameDisplays = conversationPlayerContainer.querySelectorAll('.model-name-display');
             modelNameDisplays.forEach(display => {
                 display.textContent = '';
             });
 
             // Stop any playing audio
-            if (podcastWavePlayers.a) podcastWavePlayers.a.stop();
-            if (podcastWavePlayers.b) podcastWavePlayers.b.stop();
+            if (conversationWavePlayers.a) conversationWavePlayers.a.stop();
+            if (conversationWavePlayers.b) conversationWavePlayers.b.stop();
 
             // Reset session
-            currentPodcastSessionId = null;
+            currentConversationSessionId = null;
 
             // Reset the flag for both samples played
-            bothPodcastSamplesPlayed = false;
+            bothConversationSamplesPlayed = false;
 
             // Hide generated script preview
             generatedScriptPreview.style.display = 'none';
@@ -2652,16 +2784,16 @@
             themeInput.value = '';
             keywordsInput.value = '';
             lengthSelect.value = 'medium';
-            styleSelect.value = 'podcast';
+            styleSelect.value = 'conversation';
             themeGenerateBtn.disabled = false;
             themeGenerateBtn.textContent = 'Generate Conversation';
         }
 
-        // Add keyboard shortcut listeners for podcast voting
+        // Add keyboard shortcut listeners for conversation voting
         document.addEventListener('keydown', function (e) {
-            // Check if we're in the podcast tab and it's active
-            const podcastTab = document.getElementById('conversational-tab');
-            if (!podcastTab.classList.contains('active')) return;
+            // Check if we're in the conversation tab and it's active
+            const conversationTab = document.getElementById('conversational-tab');
+            if (!conversationTab.classList.contains('active')) return;
 
             // Only process if input fields are not focused
             if (document.activeElement.tagName === 'INPUT' ||
@@ -2670,41 +2802,41 @@
             }
 
             if (e.key.toLowerCase() === 'a') {
-                if (bothPodcastSamplesPlayed && !podcastVoteButtons[0].disabled) {
-                    handlePodcastVote('a');
-                } else if (podcastPlayerContainer.style.display !== 'none' && !bothPodcastSamplesPlayed) {
+                if (bothConversationSamplesPlayed && !conversationVoteButtons[0].disabled) {
+                    handleConversationVote('a');
+                } else if (conversationPlayerContainer.style.display !== 'none' && !bothConversationSamplesPlayed) {
                     openToast("Please listen to both audio samples before voting", "info");
                 }
             } else if (e.key.toLowerCase() === 'b') {
-                if (bothPodcastSamplesPlayed && !podcastVoteButtons[1].disabled) {
-                    handlePodcastVote('b');
-                } else if (podcastPlayerContainer.style.display !== 'none' && !bothPodcastSamplesPlayed) {
+                if (bothConversationSamplesPlayed && !conversationVoteButtons[1].disabled) {
+                    handleConversationVote('b');
+                } else if (conversationPlayerContainer.style.display !== 'none' && !bothConversationSamplesPlayed) {
                     openToast("Please listen to both audio samples before voting", "info");
                 }
             } else if (e.key.toLowerCase() === 't') {
-                if (bothPodcastSamplesPlayed && !podcastVoteButtons[2].disabled) {
-                    handlePodcastVote('tie');
-                } else if (podcastPlayerContainer.style.display !== 'none' && !bothPodcastSamplesPlayed) {
+                if (bothConversationSamplesPlayed && !conversationVoteButtons[2].disabled) {
+                    handleConversationVote('tie');
+                } else if (conversationPlayerContainer.style.display !== 'none' && !bothConversationSamplesPlayed) {
                     openToast("Please listen to both audio samples before voting", "info");
                 }
             } else if (e.key.toLowerCase() === 'n') {
-                if (podcastNextRoundContainer.style.display === 'block') {
+                if (conversationNextRoundContainer.style.display === 'block') {
                     if (!e.ctrlKey && !e.metaKey) {
                         e.preventDefault();
                     }
-                    resetPodcastState();
+                    resetConversationState();
                 }
             } else if (e.key === ' ') {
                 // Space to play/pause current audio
-                if (podcastPlayerContainer.style.display !== 'none') {
+                if (conversationPlayerContainer.style.display !== 'none') {
                     e.preventDefault();
                     // If A is playing, toggle A, else if B is playing, toggle B, else play A
-                    if (podcastWavePlayers.a && podcastWavePlayers.a.isPlaying) {
-                        podcastWavePlayers.a.togglePlayPause();
-                    } else if (podcastWavePlayers.b && podcastWavePlayers.b.isPlaying) {
-                        podcastWavePlayers.b.togglePlayPause();
-                    } else if (podcastWavePlayers.a) {
-                        podcastWavePlayers.a.play();
+                    if (conversationWavePlayers.a && conversationWavePlayers.a.isPlaying) {
+                        conversationWavePlayers.a.togglePlayPause();
+                    } else if (conversationWavePlayers.b && conversationWavePlayers.b.isPlaying) {
+                        conversationWavePlayers.b.togglePlayPause();
+                    } else if (conversationWavePlayers.a) {
+                        conversationWavePlayers.a.play();
                     }
                 }
             }
@@ -2713,7 +2845,7 @@
         // Event listeners
         if (addLineBtn) {
             addLineBtn.addEventListener('click', function () {
-                addPodcastLine();
+                addConversationLine();
             });
         }
 
@@ -2723,19 +2855,19 @@
             });
         }
 
-        if (podcastSynthBtn) {
-            podcastSynthBtn.addEventListener('click', function () {
-                generatePodcast();
+        if (conversationSynthBtn) {
+            conversationSynthBtn.addEventListener('click', function () {
+                generateConversation();
             });
         }
 
         // Add event listeners to vote buttons
-        if (podcastVoteButtons) {
-            podcastVoteButtons.forEach(btn => {
+        if (conversationVoteButtons) {
+            conversationVoteButtons.forEach(btn => {
                 btn.addEventListener('click', function () {
-                    if (bothPodcastSamplesPlayed) {
+                    if (bothConversationSamplesPlayed) {
                         const model = this.dataset.model;
-                        handlePodcastVote(model);
+                        handleConversationVote(model);
                     } else {
                         openToast("Please listen to both audio samples before voting", "info");
                     }
@@ -2744,15 +2876,15 @@
         }
 
         // Add event listener for next round button
-        if (podcastNextRoundBtn) {
-            podcastNextRoundBtn.addEventListener('click', resetPodcastState);
+        if (conversationNextRoundBtn) {
+            conversationNextRoundBtn.addEventListener('click', resetConversationState);
         }
 
         // Initialize default state - theme mode is active by default
         // Script lines will be initialized when switching to script mode
         function initializeConversationalTab() {
             // Ensure theme mode is active by default
-            const themeTab = document.querySelector('.podcast-mode-tab[data-mode="theme"]');
+            const themeTab = document.querySelector('.conversation-mode-tab[data-mode="theme"]');
             const themeMode = document.getElementById('theme-mode');
 
             if (themeTab && themeMode) {
@@ -2761,7 +2893,7 @@
             }
 
             // Ensure script mode is hidden initially
-            const scriptTab = document.querySelector('.podcast-mode-tab[data-mode="script"]');
+            const scriptTab = document.querySelector('.conversation-mode-tab[data-mode="script"]');
             const scriptMode = document.getElementById('script-mode');
 
             if (scriptTab && scriptMode) {
@@ -2806,9 +2938,8 @@
         // Initialize with 2 empty lines for script mode (but don't show them initially)
         // They'll be created when user switches to script mode
         function ensureScriptModeReady() {
-            if (podcastLinesContainer && podcastLinesContainer.querySelectorAll('.podcast-line').length === 0) {
-                console.log('Initializing script lines...');
-                initializePodcastLines();
+            if (conversationLinesContainer && conversationLinesContainer.querySelectorAll('.conversation-line').length === 0) {
+                initializeConversationLines();
             }
         }
 

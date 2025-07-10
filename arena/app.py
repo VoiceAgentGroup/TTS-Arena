@@ -7,7 +7,7 @@ import json
 import os
 
 # Import our new modular components
-from config import FlaskConfig, get_client_ip
+from config import FlaskConfig, get_client_ip, LENGTH_OPTIONS, STYLE_OPTIONS
 from models import db, User
 from services.initialization import insert_initial_models
 from admin import admin
@@ -63,7 +63,10 @@ def before_request():
 @app.route("/")
 def arena():
     # Pass a subset of sentences for the random button fallback
-    return render_template("arena.html", harvard_sentences=json.dumps(initial_sentences))
+    return render_template("arena.html", 
+                         harvard_sentences=json.dumps(initial_sentences),
+                         length_options=LENGTH_OPTIONS,
+                         style_options=STYLE_OPTIONS)
 
 
 @app.route("/leaderboard")
@@ -128,7 +131,6 @@ def init_db():
 # Development server configuration
 if __name__ == "__main__":
     with app.app_context():
-        from models import db
         db.create_all()
         insert_initial_models()
 

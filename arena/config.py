@@ -57,6 +57,14 @@ MODEL_MAPPING = {
         "provider": "seed-tts", 
         "model": "zh_male_M392_conversation_wvae_bigtts",
     },
+    "minimax-02-hd-conv": {
+        "provider": "minimax",
+        "model": "speech-02-hd-conv",
+    },
+    "seed-tts-conv": {
+        "provider": "seed-tts-conv",
+        "model": "zh_male_M392_conversation_wvae_bigtts",
+    }
 }
 
 TTS_ROUTER_URL = "http://b1a19babde7c47e097a30796348d049c.ai-nm-z1-link.lanyun.net:8090/tts"
@@ -82,9 +90,27 @@ PLAYDIALOG_VOICES = {
 # Token management for Zero GPU services
 ZEROGPU_TOKENS = os.getenv("ZEROGPU_TOKENS", "").split(",")
 
-# OpenAI configuration for LLM content generation
+# OpenAI configuration for LLM conversation generation
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")  # Default to GPT-3.5-turbo for cost efficiency
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
+# Conversation generation specifications
+LENGTH_OPTIONS = {
+    "short": "2-3 exchanges (4-6 total lines)",
+    "medium": "4-6 exchanges (8-20 total lines)", 
+    "long": "7-9 exchanges (14-18 total lines)"
+}
+STYLE_OPTIONS = {
+    "podcast": "informal, engaging podcast-style discussion",
+    "interview": "structured interview with questions and detailed answers",
+    "debate": "respectful debate with opposing viewpoints",
+    "casual": "casual conversation between friends",
+    "educational": "educational discussion explaining concepts",
+    "news": "news-style discussion or analysis",
+    "meeting": "formal meeting with agenda and discussion points",
+    "commentary": "expert commentary on sports events or news",
+}
 
 
 def get_zerogpu_token():

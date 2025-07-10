@@ -1,32 +1,19 @@
-"""
-LLM Content Generation Service for Conversational TTS.
-
-This service uses OpenAI's API to generate conversational scripts based on user-provided
-keywords and themes.
-"""
-
 import os
 import json
 import logging
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
-from config import OPENAI_API_KEY, OPENAI_MODEL
+from config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL, LENGTH_OPTIONS, STYLE_OPTIONS
 
 logger = logging.getLogger(__name__)
 
-class LLMContentGenerator:
+class ConversationGenerator:
     """Service for generating conversational content using LLM."""
     
     def __init__(self):
-        """Initialize the LLM content generator."""
-        if not OPENAI_API_KEY:
-            logger.warning("OpenAI API key not configured. LLM content generation will not be available.")
-            self.client = None
-        else:
-            self.client = OpenAI(api_key=OPENAI_API_KEY)
+        self.client = OpenAI(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
     
     def is_available(self) -> bool:
-        """Check if the LLM service is available."""
         return self.client is not None
     
     def generate_conversation(
@@ -77,6 +64,8 @@ class LLMContentGenerator:
             
             # Parse the response
             content = response.choices[0].message.content
+            if not content:
+                raise Exception("Empty response from LLM")
             parsed_response = json.loads(content)
             
             # Validate and format the response
@@ -206,9 +195,9 @@ Style: {style}"""
 # Global instance
 _content_generator = None
 
-def get_content_generator() -> LLMContentGenerator:
+def get_content_generator() -> ConversationGenerator:
     """Get the global content generator instance."""
     global _content_generator
     if _content_generator is None:
-        _content_generator = LLMContentGenerator()
+        _content_generator = ConversationGenerator()
     return _content_generator

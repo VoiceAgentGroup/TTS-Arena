@@ -1,5 +1,5 @@
 """
-Conversational API endpoints for podcast-style generation.
+Conversational API endpoints for conversation-style generation.
 """
 
 from flask import Blueprint, request, jsonify, send_file, current_app as app, session
@@ -34,8 +34,8 @@ from config import TEMP_AUDIO_DIR
 
 @conversational_bp.route("/generate-from-theme", methods=["POST"])
 @limiter.limit("3 per minute")  # More restrictive since this uses LLM API
-def generate_podcast_from_theme():
-    """Generate conversational/podcast audio from theme and keywords."""
+def generate_conversation_from_theme():
+    """Generate conversational/conversation audio from theme and keywords."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
@@ -43,19 +43,13 @@ def generate_podcast_from_theme():
     theme = data.get("theme")
     keywords = data.get("keywords", [])
     length = data.get("length", "medium")
-    style = data.get("style", "podcast")
+    style = data.get("style", "conversation")
 
     if not theme or not isinstance(theme, str) or len(theme.strip()) < 3:
         return jsonify({"error": "Theme must be a non-empty string with at least 3 characters"}), 400
     
     if not isinstance(keywords, list):
         return jsonify({"error": "Keywords must be a list"}), 400
-    
-    if length not in ["short", "medium", "long"]:
-        return jsonify({"error": "Length must be 'short', 'medium', or 'long'"}), 400
-        
-    if style not in ["podcast", "interview", "debate", "casual", "educational", "news"]:
-        return jsonify({"error": "Invalid style parameter"}), 400
 
     try:
         # Generate script using LLM
@@ -73,8 +67,9 @@ def generate_podcast_from_theme():
             style=style
         )
         
-        # Now use the generated script with the existing TTS generation logic
-        return _generate_podcast_audio(script)
+        # Return only the generated script for user review
+        # Audio generation will happen when user clicks "Generate TTS Audio"
+        return jsonify({"generated_script": script})
         
     except Exception as e:
         app.logger.error(f"Theme-based generation error: {str(e)}")
@@ -82,89 +77,43 @@ def generate_podcast_from_theme():
 
 @conversational_bp.route("/generate", methods=["POST"])
 @limiter.limit("5 per minute")
-def generate_podcast():
-    """Generate conversational/podcast audio from pre-written script or theme."""
+def generate_conversation():
+    """Generate conversational/conversation audio from pre-written script or theme."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
     
-    # Check if this is a script-based request or theme-based request
-    if "script" in data:
-        # Original script-based generation
-        script = data.get("script")
-        
-        if not script or not isinstance(script, list) or len(script) < 2:
-            return jsonify({"error": "Invalid script format or too short"}), 400
+    # Original script-based generation
+    script = data.get("script")
+    
+    if not script or not isinstance(script, list) or len(script) < 2:
+        return jsonify({"error": "Invalid script format or too short"}), 400
 
-        # Validate script format
-        for line in script:
-            if not isinstance(line, dict) or "text" not in line or "speaker_id" not in line:
-                return (
-                    jsonify(
-                        {
-                            "error": "Invalid script line format. Each line must have text and speaker_id"
-                        }
-                    ),
-                    400,
-                )
-            if (
-                not line["text"]
-                or not isinstance(line["speaker_id"], int)
-                or line["speaker_id"] not in [0, 1]
-            ):
-                return (
-                    jsonify({"error": "Invalid script content. Speaker ID must be 0 or 1"}),
-                    400,
-                )
-        
-        return _generate_podcast_audio(script)
-        
-    elif "theme" in data:
-        # Theme-based generation (redirect to the dedicated endpoint logic)
-        theme = data.get("theme")
-        keywords = data.get("keywords", [])
-        length = data.get("length", "medium")
-        style = data.get("style", "podcast")
-
-        if not theme or not isinstance(theme, str) or len(theme.strip()) < 3:
-            return jsonify({"error": "Theme must be a non-empty string with at least 3 characters"}), 400
-        
-        if not isinstance(keywords, list):
-            return jsonify({"error": "Keywords must be a list"}), 400
-        
-        if length not in ["short", "medium", "long"]:
-            return jsonify({"error": "Length must be 'short', 'medium', or 'long'"}), 400
-            
-        if style not in ["podcast", "interview", "debate", "casual", "educational", "news"]:
-            return jsonify({"error": "Invalid style parameter"}), 400
-
-        try:
-            # Generate script using LLM
-            from services import get_content_generator
-            content_generator = get_content_generator()
-            
-            if not content_generator.is_available():
-                return jsonify({"error": "LLM content generation service not available. Please configure OPENAI_API_KEY."}), 503
-            
-            # Generate the conversational script
-            script = content_generator.generate_conversation(
-                theme=theme.strip(),
-                keywords=[k.strip() for k in keywords if k.strip()],
-                length=length,
-                style=style
+    # Validate script format
+    for line in script:
+        if not isinstance(line, dict) or "text" not in line or "speaker_id" not in line:
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid script line format. Each line must have text and speaker_id"
+                    }
+                ),
+                400,
             )
-            
-            # Now use the generated script with the existing TTS generation logic
-            return _generate_podcast_audio(script)
-            
-        except Exception as e:
-            app.logger.error(f"Theme-based generation error: {str(e)}")
-            return jsonify({"error": f"Failed to generate conversation: {str(e)}"}), 500
-    else:
-        return jsonify({"error": "Either 'script' or 'theme' must be provided"}), 400
+        if (
+            not line["text"]
+            or not isinstance(line["speaker_id"], int)
+            or line["speaker_id"] not in [0, 1]
+        ):
+            return (
+                jsonify({"error": "Invalid script content. Speaker ID must be 0 or 1"}),
+                400,
+            )
+    
+    return _generate_conversation_audio(script)
 
-def _generate_podcast_audio(script):
-    """Internal function to generate podcast audio from a validated script."""
+def _generate_conversation_audio(script):
+    """Internal function to generate conversation audio from a validated script."""
     # Get two conversational models (currently only CSM and PlayDialog)
     available_models = Model.query.filter_by(
         model_type=ModelType.CONVERSATIONAL.value, is_active=True
@@ -262,10 +211,10 @@ def _generate_podcast_audio(script):
 
     except Exception as e:
         app.logger.error(f"Conversational generation error: {str(e)}")
-        return jsonify({"error": f"Failed to generate podcast: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to generate conversation: {str(e)}"}), 500
 
 @conversational_bp.route("/audio/<session_id>/<model_key>")
-def get_podcast_audio(session_id, model_key):
+def get_conversation_audio(session_id, model_key):
     """Serve audio file for conversational session."""
     # If verification not setup, handle it first
     if app.config.get("TURNSTILE_ENABLED") and not session.get("turnstile_verified"):
@@ -307,7 +256,7 @@ def get_podcast_audio(session_id, model_key):
 
 @conversational_bp.route("/vote", methods=["POST"])
 @limiter.limit("30 per minute")
-def submit_podcast_vote():
+def submit_conversation_vote():
     """Submit vote for conversational comparison. Supports tie votes."""
 
     data = request.get_json()
